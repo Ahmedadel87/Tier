@@ -123,7 +123,7 @@ All type groups and types:
     5 could be a floating point number not only an integer, in default the list goes as so
     (note that vertically means they are the same priority):
     - `V::Numbers`: `Integer` > `Float`
-    - `V::Strings': `String` > (still figuring out strings)
+    - `V::Strings`: `String` > (still figuring out strings)
     - `V::Bool`: `Bool`
     - `V::Other`
 
