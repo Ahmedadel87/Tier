@@ -44,11 +44,11 @@ The type system is split into types and type groups,
      of the 'Integer' type group to a 'i64' (a type).
 
 All type groups and types:
-  - 'Integer' → 'i8', 'u8', 'i16', 'u16', 'i32', 'u32', 'i64', 'u64'
-  - 'Float' → 'f32', 'f64'
-  - 'Bool' → 'bool'
-  - 'String' →?
-  - 'Char' →?
+  - `Integer` → `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`, `u64`
+  - `Float` → `f32`, `f64`
+  - `Bool` → `bool`
+  - `String` →?
+  - `Char` →?
     
   - It is possible to make your own type groups:
     `'#set typegroup' IDENT '=' TYPE(s) ';'`
