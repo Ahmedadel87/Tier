@@ -71,9 +71,9 @@ All type groups and types:
 
 # 3.0: Declarations:
 '`let' ['mut'] IDENT [':' TYPE] '=' EXPRESSION ';'`
-       |             |
-       |             L-> type is inferred unless `(':' TYPE)` was found.
-       L-> immutable by default unless `mut` specified.
+
+  - type is inferred unless `(':' TYPE)` was found.
+  - immutable by default unless `mut` specified.
 
   ex: 
   - `let x: i32 = 5;`      // immutable, type is not inferred (i32 was specified).
@@ -129,7 +129,7 @@ All type groups and types:
     You may have noticed they are put into groups starting with 'V::', these are value groups, they contain type groups,
     they are critical for the priority system,  they are denoted with 'V::', but note that they belong to the type inference system but NOT the type system.
     In default when making a type group, they are assigned to V::Other, to assign a type group in any value group at any priority rank then follow this syntax:
-      '#insert' TYPE_GROUP 'in' VALUE_GROUP 'as rank' (Integer Value) ';'
+      `'#insert' TYPE_GROUP 'in' VALUE_GROUP 'as rank' (Integer Value) ';'`
     Note the top/first priority is 1.
     ex:
       `#insert Float in V::Numbers as rank 1`
