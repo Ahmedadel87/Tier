@@ -45,11 +45,3 @@ void Report(const std::vector<Error>& errors){
         std::cout << "->\x1B[0m " << to_expect(error.code) << '\n';
     }
 }
-
-int main(){
-
-    std::vector<Error> error = {{5, 1, 11, "let x: = 5", "file.cpp", Code::TYPE_MISS}, {6, 1, 12, "let x2: = 2", "file.cpp", Code::TYPE_MISS}};
-    Report(error);
-
-    return 0;
-}

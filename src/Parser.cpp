@@ -81,7 +81,7 @@ void IDENT(const Token& token, std::string& ident, std::vector<Expected>& expect
 
 void COLON(std::vector<Expected>& expected_vector){
     expected_vector.clear();
-    expected_vector = {Expected::TYPE, Expected::EQUAL};
+    expected_vector = {Expected::TYPE};
 }
 
 void TYPE(const Token& token, std::vector<Expected>& expected_vector, TokenType& dec_type){
@@ -121,7 +121,7 @@ void call_token(std::vector<Token>& expr, const Token& token, AST1_Type& type, s
     else if(token.type== TokenType::PRINT) PRINT(token, type, expected_vector);
 }
 
-#define DEBUG
+// #define DEBUG
 
 std::vector<AST1_NODE> AST1(const std::vector<Token>& line, std::string file_name){
     std::vector<Token> expr;
@@ -150,7 +150,9 @@ std::vector<AST1_NODE> AST1(const std::vector<Token>& line, std::string file_nam
     return std::vector<AST1_NODE>{};
 }
 
-int main(){
+int main(int argc, char** argv){
+    std::cout << "Hello from [COMPILER]";
+
     token_word[TokenType::LET] = "LET";
     token_word[TokenType::INT] = "INT";
     token_word[TokenType::FLOAT] = "FLOAT";
@@ -175,7 +177,7 @@ int main(){
     token_word[TokenType::PRINT] = "PRINT";
     token_word[TokenType::NULL_] = "NULL_";
 
-    std::string file_name = "syntax testing.txt";
+    std::string file_name = argv[1];
     std::ifstream read(file_name);
     std::string temp;
     std::vector<std::string> lines;
