@@ -2,6 +2,7 @@
 
 #include <string>
 #include <array>
+#include <vector>
 
 #include "Lexer.hpp"
 
@@ -32,4 +33,4 @@ constexpr std::string_view to_expect(Code t) {
     return expected[static_cast<size_t>(t)];
 }
 
-void Report(Error error);
+void Report(const std::vector<Error>& errors);
