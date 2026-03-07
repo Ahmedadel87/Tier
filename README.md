@@ -3,3 +3,5 @@
 - cool type system
 - error diagnostics
 - the configuration system grows with your skill level
+
+## IN ITS EARLY STAGE - WIP
