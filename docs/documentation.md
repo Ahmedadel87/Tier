@@ -166,13 +166,13 @@ All type groups and types:
   ommiting `->` is equal to `-> void`.
   {insert lang name} templates are made to be clear and simple, they go in hand with the type inference system using type groups and value groups, for example:
   ```
-  fn<Integer::T> add(x: T, y: T) -> T {
+  fn<T: Intger> add(x: T, y: T) -> T {
     return x + y;
   }
   ```
   or
   ```
-  fn<V::Arithemtic::T> add(x: T, y: T) -> T {
+  fn<T: V::Arithemtic> add(x: T, y: T) -> T {
     return x + y;
   }
   ```
