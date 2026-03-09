@@ -152,11 +152,12 @@ All type groups and types:
     Note the top/first priority is 1.
     ex:
       ```
-      #insert Float in V::Numbers as rank 1
-      let x = 4 // inferred as f64.
+      #insert Float in V::Numbers as rank 1;
+      let x = 4; // inferred as f64.
       ```
 
 # 4.0: Functions and Templates:
+  ## WIP
   Function syntax is similar to Rust:
   ```
   fn add(x: i32, y: i32) -> i32 {
@@ -165,6 +166,12 @@ All type groups and types:
   ```
   ommiting `->` is equal to `-> void`.
   {insert lang name} templates are made to be clear and simple, they go in hand with the type inference system using type groups and value groups, for example:
+  ```
+  fn<T> add(x: T, y: T) -> T {
+    return x + y;
+  }
+  ```
+  or
   ```
   fn<T: Intger> add(x: T, y: T) -> T {
     return x + y;
@@ -175,4 +182,16 @@ All type groups and types:
   fn<T: V::Arithemtic> add(x: T, y: T) -> T {
     return x + y;
   }
+  ```
+
+  #set promotion
+  #set explicit
+
+  ## WIP
+  generics system
+  ```
+  constraint<T> quack {
+    can T.quack();
+    exist T.health;
+  } 
   ```
