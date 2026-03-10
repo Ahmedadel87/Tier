@@ -141,28 +141,6 @@ std::vector<std::vector<lexical_token>> Stream(std::vector<std::string> lines){
 }
 
 //*- ^-- Produces exact groupping required whilst retaining orginal lines.
-const std::unordered_map<std::string, TokenType> keywords{
-    {"let", TokenType::LET},
-    {":", TokenType::COLON},
-    {"i8", TokenType::I8},
-    {"u8", TokenType::U8},
-    {"i16", TokenType::I16},
-    {"u16", TokenType::U16},
-    {"i32", TokenType::I32},
-    {"u32", TokenType::U32},
-    {"i64", TokenType::I64},
-    {"u64", TokenType::U64},
-    {"{", TokenType::LBRAC},
-    {"}", TokenType::RBRAC},
-    {"(", TokenType::LPARA},
-    {")", TokenType::RPARA},
-    {"=", TokenType::EQUAL},
-    {"+", TokenType::ADD},
-    {"-", TokenType::SUB},
-    {"*", TokenType::MUL},
-    {"/", TokenType::DIV},
-    {"print", TokenType::PRINT},
-};
 
 std::vector<Token> Tokenize(std::vector<lexical_token> line){
     std::vector<Token> tokens;

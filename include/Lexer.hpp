@@ -31,7 +31,8 @@ enum class TokenType{
     RBRAC,   // '}'
     LPARA,  // '('
     RPARA, // ')'
-    COLON,
+    COLON, // ':'
+    HASHTAG, // '#'
 
     // Operators
     EQUAL,
@@ -43,6 +44,7 @@ enum class TokenType{
     // Keywords
     LET,
     PRINT,
+    INFER,
 
     NULL_
 };
@@ -73,3 +75,55 @@ bool only_space(std::string str);
 std::string trim(std::string& s);
 std::vector<std::vector<lexical_token>> Stream(std::vector<std::string> lines);
 std::vector<Token> Tokenize(std::vector<lexical_token> line);
+
+static const std::unordered_map<std::string, TokenType> keywords{
+    {"let", TokenType::LET},
+    {":", TokenType::COLON},
+    {"i8", TokenType::I8},
+    {"u8", TokenType::U8},
+    {"i16", TokenType::I16},
+    {"u16", TokenType::U16},
+    {"i32", TokenType::I32},
+    {"u32", TokenType::U32},
+    {"i64", TokenType::I64},
+    {"u64", TokenType::U64},
+    {"{", TokenType::LBRAC},
+    {"}", TokenType::RBRAC},
+    {"(", TokenType::LPARA},
+    {")", TokenType::RPARA},
+    {"=", TokenType::EQUAL},
+    {"+", TokenType::ADD},
+    {"-", TokenType::SUB},
+    {"*", TokenType::MUL},
+    {"/", TokenType::DIV},
+    {"print", TokenType::PRINT},
+};
+
+static const std::unordered_map<TokenType, std::string> token_word = {
+    {TokenType::LET, "LET"},
+    {TokenType::COLON, "COLON"},
+    {TokenType::I8, "I8"},
+    {TokenType::U8, "U8"},
+    {TokenType::I16, "I16"},
+    {TokenType::U16, "U16"},
+    {TokenType::I32, "I32"},
+    {TokenType::U32, "U32"},
+    {TokenType::I64, "I64"},
+    {TokenType::U64, "U64"},
+    {TokenType::F32, "F32"},
+    {TokenType::F64, "F64"},
+    {TokenType::LBRAC, "LBRAC"},
+    {TokenType::RBRAC, "RBRAC"},
+    {TokenType::LPARA, "LPARA"},
+    {TokenType::RPARA, "RPARA"},
+    {TokenType::EQUAL, "EQUAL"},
+    {TokenType::ADD, "+"},
+    {TokenType::SUB, "-"},
+    {TokenType::MUL, "*"},
+    {TokenType::DIV, "/"},
+    {TokenType::PRINT, "PRINT"},
+    {TokenType::INT, "INT"},
+    {TokenType::FLOAT, "FLOAT"},
+    {TokenType::STR, "STR"},
+    {TokenType::IDENTIFIER, "IDENTIFIER"},
+};
