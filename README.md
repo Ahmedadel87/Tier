@@ -1,5 +1,5 @@
 # Compiler
 ![Tier Logo](assets/Logo.png)\
-Tiered is a statically typed language inspired by C++ and Rust.
+Tier is a statically typed language inspired by C++ and Rust.
 
 ## IN ITS EARLY STAGE - WIP
