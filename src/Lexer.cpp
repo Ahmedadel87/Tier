@@ -141,40 +141,44 @@ std::vector<std::vector<lexical_token>> Stream(std::vector<std::string> lines){
 }
 
 //*- ^-- Produces exact groupping required whilst retaining orginal lines.
+const std::unordered_map<std::string, TokenType> keywords{
+    {"let", TokenType::LET},
+    {":", TokenType::COLON},
+    {"i8", TokenType::I8},
+    {"u8", TokenType::U8},
+    {"i16", TokenType::I16},
+    {"u16", TokenType::U16},
+    {"i32", TokenType::I32},
+    {"u32", TokenType::U32},
+    {"i64", TokenType::I64},
+    {"u64", TokenType::U64},
+    {"{", TokenType::LBRAC},
+    {"}", TokenType::RBRAC},
+    {"(", TokenType::LPARA},
+    {")", TokenType::RPARA},
+    {"=", TokenType::EQUAL},
+    {"+", TokenType::ADD},
+    {"-", TokenType::SUB},
+    {"*", TokenType::MUL},
+    {"/", TokenType::DIV},
+    {"print", TokenType::PRINT},
+};
 
 std::vector<Token> Tokenize(std::vector<lexical_token> line){
     std::vector<Token> tokens;
     for(lexical_token& token : line){
         std::string org_word = token.string;
         std::string org_line = token.org_line;
-        if(token.is_string) tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::STR});
-        else if(token.string== "let") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::LET});
-        else if(token.string== ":") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::COLON});
-        else if(token.string== "i8") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::I8});
-        else if(token.string== "u8") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::U8});
-        else if(token.string== "i16") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::I16});
-        else if(token.string== "u16") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::U16});
-        else if(token.string== "i32") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::I32});
-        else if(token.string== "u32") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::U32});
-        else if(token.string== "i64") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::I64});
-        else if(token.string== "u64") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::U64});
-        else if(token.string== "f32") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::F32});
-        else if(token.string== "f64") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::F64});
-        else if(token.string== "{") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::LBRAC});
-        else if(token.string== "}") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::RBRAC});
-        else if(token.string== "(") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::LPARA});
-        else if(token.string== ")") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::RPARA});
-        else if(token.string== "=") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::EQUAL});
-        else if(token.string== "+") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::ADD});
-        else if(token.string== "-") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::SUB});
-        else if(token.string== "*") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::MUL});
-        else if(token.string== "/") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::DIV});
-        else if(token.string== "print") tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::PRINT});
+        auto it = keywords.find(token.string);
+        TokenType type;
+        if(token.is_string) type = TokenType::STR;
+        else if(it != keywords.end()) type = it->second;
         else if(isdigitstr(token.string).valid){ 
-            if(isdigitstr(token.string).decimal) tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::FLOAT});
-            else tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::INT});
+            if(isdigitstr(token.string).decimal) type = TokenType::FLOAT;
+            else type = TokenType::INT;
         }
-        else tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, TokenType::IDENTIFIER});
+        else type = TokenType::IDENTIFIER;
+        tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, type});
     }
 
     return tokens;
