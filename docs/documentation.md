@@ -56,7 +56,7 @@ All type groups and types:
     or
     `'#enforce typegroup' IDENT '=' TYPE(s) ';'`
     ex: 
-    `#set typegroup Unsigned_Integer = u8, u16, u32, u64;`
+    
 
     Type definitions:
       - `i8`, `i16`, `i32`, `i64`: are signed integers (they can be positive and negative) with a bit size 
@@ -107,7 +107,7 @@ All type groups and types:
   `'#set infer' TYPE_GROUP 'to' TYPE ';'`
   or 
   `'#enforce infer' TYPE_GROUP 'to' TYPE ';'`
-   L-> Everything after it will use that default but NOT before it, it is not affected by scopes.
+   L-> Everything after it will use that default bu`#set typegroup Unsigned_Integer = u8, u16, u32, u64;`t NOT before it, it is not affected by scopes.
   Unless defaults are set, then the defaults are as follows:
     - `Integer` → `i32`
     - `Float` → `f64`
@@ -115,9 +115,9 @@ All type groups and types:
 
   ## 3.21:
   - If you make your own type group, and overwrite it with overlapping types in existing typegroup then do:
-    `'#set infer on' TYPE_GROUP 'instead' TYPE_GROUP ';'`
+    `'#set infer' TYPE_GROUP 'instead' TYPE_GROUP ';'`
     or
-    `'#enforce infer on' TYPE_GROUP 'instead' TYPE_GROUP ';'`
+    `'#enforce infer' TYPE_GROUP 'instead' TYPE_GROUP ';'`
   ex:
       ```
       #set typegroup Unsigned_Integer = u8, u16, u32, u64; 
@@ -139,10 +139,6 @@ All type groups and types:
     - `V::Strings`: `String` > (still figuring out strings)
     - `V::Bool`: `Bool`
     - `V::Other`
-    To give priority of overlapping type groups do:
-    `'#set infer on' TYPE_GROUP 'instead' TYPE_GROUP ';'`
-    or
-    `'#enforce infer on' TYPE_GROUP 'instead' TYPE_GROUP ';'`
 
     These are the only value groups, they CANNOT be created.
     You may have noticed they are put into groups starting with `V::`, these are value groups, they contain type groups,
