@@ -49,7 +49,7 @@ All type groups and types:
   - `Float` → `f32`, `f64`
   - `Bool` → `bool`
   - `String` →?
-  - `Char` →?
+  - `Char` → `char`
     
   - It is possible to make your own type groups:
     `'#set typegroup' IDENT '=' TYPE(s) ';'`
@@ -67,11 +67,11 @@ All type groups and types:
 
       - `f32`, `f64`: are floating point numbers (they can have decimals).
 
-      - `bool`: corresponds to i8 integers 0 and 1 but masked as false (0) and true (1).
+      - `bool`: corresponds to i8 integers 0 and 1 masked as false (0) and true (1).
 
-      - `void`: corresponds either to nothing or a value without a type. 
+      - `void`: raw memory, type not checked by the compiler.
 
-      - `String`:?
+      - `String`: part of the STL.
       
 
 # 3.0: Declarations:
@@ -169,17 +169,18 @@ All type groups and types:
   ```
   or
   ```
-  fn<T: Intger> add(x: T, y: T) -> T {
+  fn<T: Integer> add(x: T, y: T) -> T {
     return x + y;
   }
   ```
   or
   ```
-  fn<T: V::Arithemtic> add(x: T, y: T) -> T {
+  fn<T: V::Arithmetic> add(x: T, y: T) -> T {
     return x + y;
   }
   ```
 
+  ## WIP
   #set promotion
   #set explicit
 
@@ -191,3 +192,18 @@ All type groups and types:
     exist T.health;
   } 
   ```
+
+# 5.0: Memory:
+  ## SECTION IN WIP.
+  Memory is also tiered.
+  * `#enforce/set memory_check off`: raw memory control, compiler enforces no memory checks, best when performance is key.
+  * `#enforce/set memory_check on`: 
+    - The default setting.
+    - Tracks ownership, prevents use after being freed.
+    - Checks for dangling pointers.
+  * `#enforce/set memory_check strict`:
+    - Everything in on plus:
+    - Requires null checks before dereferencing.
+    - Single mutable reference at any given time.
+    - Full-lifetime tracking.
+    - Compile-time guaranteed safety.
