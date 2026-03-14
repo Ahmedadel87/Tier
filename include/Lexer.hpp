@@ -44,7 +44,12 @@ enum class TokenType{
     // Keywords
     LET,
     PRINT,
+    SET,
+    ENFORCE,
     INFER,
+    ON,
+    INSTEAD,
+    TYPEGROUP,
 
     NULL_
 };
@@ -97,6 +102,13 @@ static const std::unordered_map<std::string, TokenType> keywords{
     {"*", TokenType::MUL},
     {"/", TokenType::DIV},
     {"print", TokenType::PRINT},
+    {"#", TokenType::HASHTAG},
+    {"set", TokenType::SET},
+    {"enforce", TokenType::ENFORCE},
+    {"infer", TokenType::INFER},
+    {"on", TokenType::ON},
+    {"instead", TokenType::INSTEAD},
+    {"typegroup", TokenType::TYPEGROUP},
 };
 
 static const std::unordered_map<TokenType, std::string> token_word = {
@@ -126,4 +138,11 @@ static const std::unordered_map<TokenType, std::string> token_word = {
     {TokenType::FLOAT, "FLOAT"},
     {TokenType::STR, "STR"},
     {TokenType::IDENTIFIER, "IDENTIFIER"},
+    {TokenType::HASHTAG, "HASHTAG"},
+    {TokenType::SET, "set"},
+    {TokenType::ENFORCE, "enforce"},
+    {TokenType::INFER, "infer"},
+    {TokenType::ON, "on"},
+    {TokenType::INSTEAD, "instead"},
+    {TokenType::TYPEGROUP, "typegroup"},
 };

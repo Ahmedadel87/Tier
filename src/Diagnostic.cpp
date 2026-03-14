@@ -4,7 +4,7 @@
 #include "Lexer.hpp"
 
 void write_token(const Token& token, size_t& prev){
-    for(int i = 0; i < token.org_start_pos - prev; ++i) std::cout << ' ';
+    if(token.org_start_pos > prev) for(int i = 0; i < token.org_start_pos - prev; ++i) std::cout << ' ';
     std::cout << token.org_word;
     prev = token.org_start_pos + token.org_word.size();
 }

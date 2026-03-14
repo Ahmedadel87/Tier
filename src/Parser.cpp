@@ -8,6 +8,11 @@
 #include "Parser.hpp"
 #include "Diagnostic.hpp"
 
+bool is_operator(TokenType type){
+    if(type == TokenType::ADD || type == TokenType::SUB || type == TokenType::MUL || type == TokenType::DIV) return true;
+    else return false;
+}
+
 bool is_type(TokenType type){
     if(type == TokenType::I8 || type == TokenType::U8 || type == TokenType::I16 || type == TokenType::U16 || type == TokenType::I32 || type == TokenType::U32 || type == TokenType::I64 || type == TokenType::U64 || type == TokenType::F32 || type == TokenType::F64){
         return true;
@@ -15,148 +20,7 @@ bool is_type(TokenType type){
     else return false; 
 }
 
-bool is_operator(TokenType type){
-    if(type == TokenType::ADD || type == TokenType::SUB || type == TokenType::MUL || type == TokenType::DIV) return true;
-    else return false;
-}
-
-bool is_expected(const std::vector<Expected>& expected_vector, const TokenType& have){
-    for(Expected expected : expected_vector){
-        switch(expected){
-            case Expected::COLON:
-                if(have == TokenType::COLON) return true;
-                break;
-            case Expected::TYPE:
-                if(is_type(have)) return true;
-                break;
-            case Expected::IDENTIFIER:
-                if(have == TokenType::IDENTIFIER) return true;
-                break;
-            case Expected::EQUAL:
-                if(have == TokenType::EQUAL) return true;
-                break;
-            case Expected::LITERAL:
-                if(have == TokenType::INT || have == TokenType::FLOAT || have == TokenType::STR) return true;
-                break;
-            case Expected::RPARA:
-                if(have == TokenType::RPARA) return true;
-                break;
-            case Expected::LPARA:
-                if(have == TokenType::LPARA) return true;
-                break;
-            case Expected::START:
-                switch(have){
-                    case TokenType::LET:
-                        return true;
-                        break;
-                    case TokenType::PRINT:
-                        return true;
-                        break;
-                    default:
-                        return true;
-                }
-                break;
-            case Expected::OPERATOR:
-                switch(have){
-                    case TokenType::ADD:
-                        return true;
-                        break;
-                    case TokenType::SUB:
-                        return true;
-                        break;
-                    case TokenType::MUL:
-                        return true;
-                        break;
-                    case TokenType::DIV:
-                        return true;
-                        break;
-                }
-                break;
-        }
-    }
-    return false;
-}
-
-void report_error_to_diagnostics(const std::vector<Token>& line, const std::vector<Expected>& expected_vector, const Token& got, std::string file_name){
-    if(expected_vector== std::vector<Expected>{Expected::TYPE} && got.type== TokenType::EQUAL){
-        /*
-        * struct Error{
-        *     size_t pos, size, line;
-        *     const std::vector<Token>& org_line;
-        *     std::string file_name;
-        *     Code code;
-        * };
-        */
-       std::cout << '\n';
-       Report(Error{got.org_start_pos, got.org_word.size(), got.line_num, line, file_name, Code::TYPE_MISS});
-    }
-}
-
-void LET(const Token& token, AST1_Type& type, std::vector<Expected>& expected_vector){
-    type = AST1_Type::DECLARATION;
-    expected_vector.clear();
-    expected_vector = {Expected::IDENTIFIER};
-}
-
-void IDENT(const Token& token, std::string& ident, std::vector<Expected>& expected_vector){
-    ident = token.org_word;
-    expected_vector.clear();
-    expected_vector = {Expected::COLON, Expected::EQUAL};
-}   
-
-void COLON(std::vector<Expected>& expected_vector){
-    expected_vector.clear();
-    expected_vector = {Expected::TYPE};
-}
-
-void TYPE(const Token& token, std::vector<Expected>& expected_vector, TokenType& dec_type){
-    expected_vector.clear();
-    expected_vector = {Expected::EQUAL};
-
-    dec_type = token.type;
-}
-
-void EQUAL(std::vector<Expected>& expected_vector){
-    expected_vector.clear();
-    expected_vector = {Expected::LITERAL, Expected::IDENTIFIER};
-}
-
-void LITERAL(std::vector<Expected>& expected_vector, std::vector<Token>& expr, const Token& token){
-    expected_vector.clear();
-    expected_vector.push_back(Expected::OPERATOR);
-    expr.push_back(token);
-}
-
-void OPERATOR(std::vector<Expected>& expected_vector, std::vector<Token>& expr, const Token& token){
-    expected_vector.clear();
-    expected_vector = {Expected::LITERAL, Expected::IDENTIFIER};
-    expr.push_back(token);
-}
-
-
-void PRINT(const Token& token, AST1_Type& type, std::vector<Expected>& expected_vector){
-    type = AST1_Type::PRINT;
-    expected_vector.clear();
-    expected_vector = {Expected::RPARA};
-}
-
-void RPARA(std::vector<Expected>& expected_vector){
-    expected_vector.clear();
-    expected_vector = {Expected::RPARA};
-}
-
-void call_token(std::vector<Token>& expr, const Token& token, AST1_Type& type, std::string& ident, std::vector<Expected>& expected_vector, TokenType& dec_type){
-    if(token.type== TokenType::LET) LET(token, type, expected_vector);
-    else if(token.type== TokenType::IDENTIFIER) IDENT(token, ident, expected_vector);
-    else if(token.type== TokenType::COLON) COLON(expected_vector);
-    else if(is_type(token.type)) TYPE(token, expected_vector, dec_type);
-    else if(token.type== TokenType::EQUAL) EQUAL(expected_vector);
-    else if(token.type== TokenType::INT || token.type== TokenType::FLOAT || token.type== TokenType::STR) LITERAL(expected_vector, expr, token);
-    else if(is_operator(token.type)) OPERATOR(expected_vector, expr, token);
-    else if(token.type== TokenType::PRINT) PRINT(token, type, expected_vector);
-}
-
-void print_expr(const ExprNode& node, const std::string& prefix = "", bool is_right = false){
+void print_expr(const ExprNode& node, const std::string& prefix, bool is_right){
     if(std::holds_alternative<LiteralExpr>(node.node)){
         std::cout << prefix << (is_right ? "└── " : "├── ");
         std::cout << std::get<LiteralExpr>(node.node).value.org_word << '\n';
@@ -224,41 +88,88 @@ ExprNode Parse_expression(const std::vector<Token>& expr){
     return root;
 }
 
-#define DEBUG
+AST_NODE let_dec(Parser parser){
+    Declaration_Node dec_node;
+    if(parser.check(TokenType::IDENTIFIER)) dec_node.identifier = parser.consume().org_word;
+    else return AST_NODE{};
 
-AST1_NODE AST1(const std::vector<Token>& line, std::string file_name){
-    std::vector<Token> expr;
-    AST1_Type type;
-    TokenType dec_type;
-    std::string ident;
-    std::vector<Expected> expected_vector = {Expected::START};
-    #ifdef DEBUG
-    int z = 0;
-    #endif
-    for(size_t i = 0; i < line.size(); ++i){
-        const Token& token = line[i];
-        #ifdef DEBUG
-        std::cout << int(token.type) << ' ';
-        #endif
-        if(is_expected(expected_vector, token.type)) call_token(expr, token, type, ident, expected_vector, dec_type);
-        else{ report_error_to_diagnostics(line, expected_vector, token, file_name); return AST1_NODE{}; }
+    if(parser.check(TokenType::COLON)){
+        if(is_type(parser.consume(2).type)){
+            dec_node.type = parser.current().type;
+            std::cout << "type: " << parser.current().org_word;
+        }
+        else return AST_NODE{};
     }
-    #ifdef DEBUG
-    std::cout << "\nOUT:\n";
-    std::cout << "AST type: " << int(type) << '\n';
-    std::cout << "Declaration type: " << token_word[dec_type] << '\n';
-    std::cout << "Declaration Identifier: " << ident << '\n';
-    #endif
-    switch(type){
-        case AST1_Type::DECLARATION:
-            print_expr(Parse_expression(expr));
-            return AST1_NODE{AST1_Type::DECLARATION, Declaration_Node{ident, dec_type, Parse_expression(expr)}, false, true};
+    else dec_node.type = TokenType::NULL_;
+
+    if(parser.check(TokenType::EQUAL)) parser.consume();
+    else return AST_NODE{};
+
+    ExprNode expr = Parse_expression(parser.left());
+    dec_node.expr = std::move(expr);
+
+    return AST_NODE{AST_Type::DECLARATION, Node(std::move(dec_node)), false, false, &parser.line()};
+}
+
+AST_NODE set_and_enforce_statements(Parser parser){
+    AST_Type type;
+
+    bool enforce = parser.check(TokenType::ENFORCE) ? true : false;
+    if(!parser.check(TokenType::SET) && !enforce) return AST_NODE{};
+    
+    parser.consume();
+
+    //* `'#set typegroup' IDENT '=' TYPE(s) ';'` BRANCH
+    if(parser.check(TokenType::TYPEGROUP)){ 
+        parser.consume(); 
+        type = AST_Type::TYPE_GROUP_DEC; 
+        Type_group_Declaration_Node dec_node;
+
+        if(parser.consume().type == TokenType::IDENTIFIER) dec_node.typegroup = parser.current().org_word;
+        else return AST_NODE{};
+
+        if(parser.consume().type != TokenType::EQUAL) return AST_NODE{};
+        for(Token token : parser.left()) dec_node.types.push_back(token.type);
+
+        std::cout << "enforce: " << (enforce ? "yes\n" : "no\n");
+        std::cout << "type: " << int(type) << '\n';
+        std::cout << "types assigned: ";
+        for(TokenType type : dec_node.types) std::cout << token_word.at(type) << ' ';
+
+        return {type, Node(dec_node), false, false, &parser.line()};
     }
-    return AST1_NODE{};
+
+    //* `'#set infer' TYPE_GROUP 'to' TYPE ';'` BRANCH
+    //* `'#set infer' TYPE_GROUP 'instead' TYPE_GROUP ';'`
+    else if(parser.check(TokenType::INFER)){
+        parser.consume();
+    }
+    return AST_NODE{};
+}
+
+/*
+struct AST_NODE{
+    AST_Type type;
+    Node node;
+    bool iterable;
+    bool const_;
+    const std::vector<Token>* reference;
+};
+*/
+
+void AST(Parser parser){
+    switch(parser.current().type){
+        case TokenType::LET:
+            let_dec(parser);
+            break;
+        case TokenType::HASHTAG:
+            set_and_enforce_statements(parser);
+            break;
+    }
 }
 
 int main(int argc, char** argv){
-    std::cout << "Hello from [COMPILER]\n";
+    std::cout << "Hello from Tier\n\n";
 
     std::string file_name = argv[1];
     std::ifstream read(file_name);
@@ -266,8 +177,7 @@ int main(int argc, char** argv){
     std::vector<std::string> lines;
     while(std::getline(read, temp)) lines.push_back(temp);
     for(std::vector<lexical_token> lex : Stream(lines)){
-        AST1(Tokenize(lex), file_name);
+        AST(Parser(Tokenize(lex)));
     }
     return 0;
 }
-

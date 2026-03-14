@@ -2,36 +2,29 @@
 
 #include "AST.hpp"
 
-enum class Expected{
-    IDENTIFIER,
-    VARIABLE,
-    COLON,
-    TYPE, //* i8 -> i64 , u8 -> u64 , f32, f64
-    EQUAL,
-    LITERAL,
-    RPARA,
-    LPARA,
-    START,
-    OPERATOR //* + , - , * , /
-};
-
-std::unordered_map<TokenType, std::string> token_word;
-
-void report_error_to_diagnostics(const std::vector<Token>& line, const std::vector<Expected>& expected_vector, const Token& got, std::string file_name);
+bool is_operator(TokenType type);
 
 bool is_type(TokenType type);
 
-bool is_expected(const std::vector<Expected>& expected_vector, const TokenType& have);
+void print_expr(const ExprNode& node, const std::string& prefix = "", bool is_right = false);
 
-void LET(const Token& token, AST1_Type& type, std::vector<Expected>& expected_vector);
-void IDENT(const Token& token, std::string& ident, std::vector<Expected>& expected_vector);
-void COLON(std::vector<Expected>& expected_vector);
-void TYPE(const Token& token, std::vector<Expected>& expected_vector, TokenType& dec_type);
-void EQUAL(std::vector<Expected>& expected_vector);
-void LITERAL(std::vector<Token>& expr, const Token& token);
-void PRINT(const Token& token, AST1_Type& type, std::vector<Expected>& expected_vector);
-void RPARA(std::vector<Expected>& expected_vector);
+ExprNode Parse_expression(const std::vector<Token>& expr);
 
-void call_token(std::vector<Token>& expr, const Token& token, AST1_Type& type, std::string& ident, std::vector<Expected>& expected_vector, TokenType& dec_type);
+class Parser{
+    private:
+        std::vector<Token> tokens;
+        int pos = 0;
 
-AST1_NODE AST1(const std::vector<Token>& line, std::string file_name);
+    public:
+        Parser(std::vector<Token> user_tokens) { tokens = user_tokens; }
+        Token& current(){ return tokens[pos]; }
+        Token& peek(int offset = 1){ return tokens[pos + offset]; }
+        Token& consume(int offset = 1){ return tokens[pos += offset]; }
+        bool check(TokenType token, int offset = 1){ return (token == peek(offset).type) ? true : false; }
+        std::vector<Token> left(){ return std::vector<Token>(tokens.begin() + pos + 1, tokens.end()); }
+        std::vector<Token>& line(){ return tokens; }
+};
+
+AST_NODE let_dec(Parser parser);
+
+void AST(Parser parser);

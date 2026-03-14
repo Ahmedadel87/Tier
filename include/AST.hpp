@@ -6,10 +6,11 @@
 /*
 DECLARATION, ASSIGNMENT, PRINT
 */
-enum class AST1_Type{
+enum class AST_Type{
     DECLARATION,
     ASSIGNMENT,
     PRINT,
+    TYPE_GROUP_DEC,
     NULL_
 };
 
@@ -36,10 +37,20 @@ struct Declaration_Node{
     ExprNode expr;
 };
 
-using Node = std::variant<Declaration_Node>;
+struct Type_group_Declaration_Node{
+    std::string typegroup;
+    std::vector<TokenType> types; //* Only TokenTypes that are types will be assigned here, ex: i32
+};
 
-struct AST1_NODE{
-    AST1_Type type;
+struct Type_group_infer_instead{
+    std::string typegroup;
+    std::vector<TokenType> types; //* Only TokenTypes that are types will be assigned here, ex: i32
+};
+
+using Node = std::variant<Declaration_Node, Type_group_Declaration_Node>;
+
+struct AST_NODE{
+    AST_Type type;
     Node node;
     bool iterable;
     bool const_;

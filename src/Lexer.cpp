@@ -85,7 +85,7 @@ std::vector<std::vector<lexical_token>> Stream(std::vector<std::string> lines){
                 quote2 = (quote2) ? false : true;
                 is_string = true;
             }
-            else if((c == ':' || c == ';' || c == '{' || c == '}' || c == '=' || c == '(' || c == ')' || c == '+' || c == '-' || c == '*' || c == '/') && (!quote1 && !quote2)){ // this (if) condition specifies seperators whilst not sperating when within quotes and keeps seperator.
+            else if((c == ':' || c == ';' || c == '{' || c == '}' || c == '=' || c == '(' || c == ')' || c == '+' || c == '-' || c == '*' || c == '/' || c == '#') && (!quote1 && !quote2)){ // this (if) condition specifies seperators whilst not sperating when within quotes and keeps seperator.
                 if(!hold.empty() && !only_space(hold)){  
                     strings.push_back({line_num, trim(hold), last_first_pos, is_string, line});
                     is_string = false;
@@ -118,7 +118,8 @@ std::vector<std::vector<lexical_token>> Stream(std::vector<std::string> lines){
     for(lexical_token str : strings){
         if(str.string == ";" || str.string == "{" || str.string == "}"){
             for(int j = last_i; j < i; ++j){
-                temp.push_back(strings[j]);            }
+                temp.push_back(strings[j]);            
+            }
             if(str.string == "{") temp.push_back(strings[i]); 
             complete_lexical_tokens.push_back(temp);
             temp.clear();
@@ -157,6 +158,11 @@ std::vector<Token> Tokenize(std::vector<lexical_token> line){
         }
         else type = TokenType::IDENTIFIER;
         tokens.push_back(Token{token.org_start_pos, token.line, org_word, org_line, type});
+
+        #ifdef DEBUG
+        std::cout << token_word.at(type) << ": ";
+        std::cout << token.string << '\n';
+        #endif
     }
 
     return tokens;
