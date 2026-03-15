@@ -69,7 +69,7 @@ All type groups and types:
 
       - `bool`: corresponds to i8 integers 0 and 1 masked as false (0) and true (1).
 
-      - `void`: raw memory, type not checked by the compiler.
+      - `void`: corresponds that there is nothing, unless it is a ptr which makes it raw memory.
 
       - `String`: part of the STL.
       
