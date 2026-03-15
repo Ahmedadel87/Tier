@@ -92,6 +92,8 @@ static const std::unordered_map<std::string, TokenType> keywords{
     {"u32", TokenType::U32},
     {"i64", TokenType::I64},
     {"u64", TokenType::U64},
+    {"f32", TokenType::F32},
+    {"f64", TokenType::F64},
     {"{", TokenType::LBRAC},
     {"}", TokenType::RBRAC},
     {"(", TokenType::LPARA},

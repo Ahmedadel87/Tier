@@ -70,8 +70,23 @@ std::vector<std::vector<lexical_token>> Stream(std::vector<std::string> lines){
         last_first_pos = 0;
         trim(line);
         line += ' ';
-        //std::cout << ':' << line << ":\n";
         for(char c : line){
+            if(c == '/' && !quote1 && !quote2){
+                // second slash BRANCH (for comments)
+                if(hold == "/"){
+                    hold.clear();
+                    break;
+                } 
+                // regular BRANCH
+                else {
+                    if(!hold.empty() && !only_space(hold)){
+                        strings.push_back({line_num, trim(hold), last_first_pos, is_string, line});
+                        hold.clear();
+                    }
+                    hold = "/";
+                }
+                continue;
+            }
             if(!hold.empty() && !only_space(hold) && !did){ 
                 last_first_pos = i;
                 did = true;
@@ -85,7 +100,7 @@ std::vector<std::vector<lexical_token>> Stream(std::vector<std::string> lines){
                 quote2 = (quote2) ? false : true;
                 is_string = true;
             }
-            else if((c == ':' || c == ';' || c == '{' || c == '}' || c == '=' || c == '(' || c == ')' || c == '+' || c == '-' || c == '*' || c == '/' || c == '#') && (!quote1 && !quote2)){ // this (if) condition specifies seperators whilst not sperating when within quotes and keeps seperator.
+            else if((c == ':' || c == ';' || c == '{' || c == '}' || c == '=' || c == '(' || c == ')' || c == '+' || c == '-' || c == '*' || c == '#') && (!quote1 && !quote2)){ // this (if) condition specifies seperators whilst not sperating when within quotes and keeps seperator.
                 if(!hold.empty() && !only_space(hold)){  
                     strings.push_back({line_num, trim(hold), last_first_pos, is_string, line});
                     is_string = false;
