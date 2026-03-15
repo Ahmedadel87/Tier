@@ -202,14 +202,14 @@ All type groups and types:
   ## SECTION IN WIP.
   ## 5.2: ***Tier***ed Memory:
   Memory is also ***Tier***ed.
-      * `#enforce/set memory_check off`: raw memory control, compiler enforces no memory checks, best when performance is key.
-      * `#enforce/set memory_check on`: 
-        - The default setting.
-        - Tracks ownership, prevents use after being freed.
-        - Checks for dangling pointers.
-      * `#enforce/set memory_check strict`:
-        - Everything in on plus:
-        - Requires null checks before dereferencing.
-        - Single mutable reference at any given time.
-        - Full-lifetime tracking.
-        - Compile-time guaranteed safety.
+  * `#enforce/set memory_check off`: raw memory control, compiler enforces no memory checks, best when performance is key.
+  * `#enforce/set memory_check on`: 
+    - The default setting.
+    - Tracks ownership, prevents use after being freed.
+    - Checks for dangling pointers.
+  * `#enforce/set memory_check strict`:
+    - Everything in on plus:
+    - Requires null checks before dereferencing.
+    - Single mutable reference at any given time.
+    - Full-lifetime tracking.
+    - Compile-time guaranteed safety.
