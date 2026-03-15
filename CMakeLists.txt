@@ -7,5 +7,5 @@ project(Compiler)
 
 file(GLOB SOURCES "src/*.cpp")
 
-add_executable(compiler ${SOURCES})
-target_include_directories(compiler PRIVATE include)
+add_executable(tier ${SOURCES})
+target_include_directories(tier PRIVATE include)
