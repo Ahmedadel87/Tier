@@ -163,19 +163,19 @@ All type groups and types:
   ommiting `->` is equal to `-> void`.
   Tier templates are made to be clear and simple, they go in hand with the type inference system using type groups and value groups, for example:
   ```
-  fn<T> add(x: T, y: T) -> T {
+  fn add<T>(x: T, y: T) -> T {
     return x + y;
   }
   ```
   or
   ```
-  fn<T: Integer> add(x: T, y: T) -> T {
+  fn add<T: Integer>(x: T, y: T) -> T {
     return x + y;
   }
   ```
   or
   ```
-  fn<T: V::Arithmetic> add(x: T, y: T) -> T {
+  fn add<T: V::Arithmetic>(x: T, y: T) -> T {
     return x + y;
   }
   ```
@@ -196,15 +196,20 @@ All type groups and types:
 
 # 5.0: Memory:
   ## SECTION IN WIP.
+  ## 5.1: References and Pointers.
+
+
+  ## SECTION IN WIP.
+  ## 5.2: ***Tier***ed Memory:
   Memory is also ***Tier***ed.
-  * `#enforce/set memory_check off`: raw memory control, compiler enforces no memory checks, best when performance is key.
-  * `#enforce/set memory_check on`: 
-    - The default setting.
-    - Tracks ownership, prevents use after being freed.
-    - Checks for dangling pointers.
-  * `#enforce/set memory_check strict`:
-    - Everything in on plus:
-    - Requires null checks before dereferencing.
-    - Single mutable reference at any given time.
-    - Full-lifetime tracking.
-    - Compile-time guaranteed safety.
+      * `#enforce/set memory_check off`: raw memory control, compiler enforces no memory checks, best when performance is key.
+      * `#enforce/set memory_check on`: 
+        - The default setting.
+        - Tracks ownership, prevents use after being freed.
+        - Checks for dangling pointers.
+      * `#enforce/set memory_check strict`:
+        - Everything in on plus:
+        - Requires null checks before dereferencing.
+        - Single mutable reference at any given time.
+        - Full-lifetime tracking.
+        - Compile-time guaranteed safety.
