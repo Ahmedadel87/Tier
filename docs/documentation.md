@@ -70,7 +70,7 @@ All type groups and types:
       
 
 # 3.0: Declarations:
-`'let' ['mut'] IDENT [':' TYPE] '=' EXPRESSION ';'`
+`'let' IDENT [':' TYPE] '=' EXPRESSION ';'`
 
   - type is inferred unless `(':' TYPE)` was found.
   - immutable by default unless `mut` specified.
