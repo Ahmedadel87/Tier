@@ -78,8 +78,8 @@ All type groups and types:
   ex: 
   - `let x: i32 = 5;`      // immutable, type is not inferred (`i32` was specified).
   - `let x = 5;`          // immutable, type is inferred (`i32` is inferred, see 3.2).
-  - `let mut x: i32 = 5;`// mutable, type is not inferred (`i32` was specified).
-  - `let mut x = 5;`    // mutable, type is inferred (`i32` is inferred, see 3.2).
+  - `let x: mut i32 = 5;`// mutable, type is not inferred (`i32` was specified).
+  - `let x: mut = 5;`    // mutable, type is inferred (`i32` is inferred, see 3.2).
 
 ## 3.1: \#set and \#enforce Directives:
   Tier's main feature is these directives, you can tell the compiler what to do using `#set` and `#enforce`.
