@@ -8,4 +8,9 @@ project(Compiler)
 file(GLOB SOURCES "src/*.cpp")
 
 add_executable(tier ${SOURCES})
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(tier PRIVATE DEBUG)
+endif()
+
 target_include_directories(tier PRIVATE include)
