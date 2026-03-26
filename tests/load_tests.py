@@ -1,15 +1,16 @@
 import subprocess
 import os
 import platform
+import sys
 
 failed = 0
 amount_of_files = 0
+compiler = sys.argv[1]
 
 def run_test(input_file, expected_file):
-    exe = "./tier" if platform.system() != "Windows" else "tier.exe"
-
+    global failed
     result = subprocess.run(
-        [exe, input_file],
+        [compiler, input_file],
         capture_output=True,
         text=True
     )
@@ -18,15 +19,15 @@ def run_test(input_file, expected_file):
         expected = f.read()
     
     if result.stdout.strip() == expected.strip():
-        print(f"{input_file} PASSED.")
+        print(f"\x1B[3;93m{input_file}\x1B[0m passed 🟩 {amount_of_files-failed}/{amount_of_files}.")
     else:
         failed += 1;
-        print(f"{input_file} FAILED.")
+        print(f"\x1B[3;93m{input_file}\x1B[0m failed 🟥 {amount_of_files-failed}/{amount_of_files}.")
 
-for file in os.listdir("tests/lexer/"):
+for file in os.listdir("lexer/"):
     if file.endswith(".tier"):
         amount_of_files += 1;
         name = file.removesuffix(".tier")
-        run_test(f"tests/lexer/{name}.tier", f"tests/lexer/{name}.expected")
+        run_test(f"lexer/{name}.tier", f"lexer/{name}.expected")
 
 print(f"{amount_of_files-failed}/{amount_of_files} files passed.")

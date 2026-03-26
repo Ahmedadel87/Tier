@@ -2,11 +2,12 @@
 
 #include "Lexer.hpp"
 #include <variant>
+#include <memory>
 
 /*
 DECLARATION, ASSIGNMENT, PRINT
 */
-enum class AST_Type{
+enum class Parser_AST_Type{
     DECLARATION,
     ASSIGNMENT,
     PRINT,
@@ -35,6 +36,7 @@ struct Declaration_Node{
     std::string identifier;
     TokenType type; //* Only TokenTypes that are types will be assigned here, ex: i32
     ExprNode expr;
+    bool const_;
 };
 
 struct Type_group_Declaration_Node{
@@ -47,12 +49,10 @@ struct Type_group_infer_instead{
     std::vector<TokenType> types; //* Only TokenTypes that are types will be assigned here, ex: i32
 };
 
-using Node = std::variant<Declaration_Node, Type_group_Declaration_Node>;
+using Parser_Node = std::variant<Declaration_Node, Type_group_Declaration_Node>;
 
-struct AST_NODE{
-    AST_Type type;
-    Node node;
-    bool iterable;
-    bool const_;
-    const std::vector<Token>* reference;
+struct Parser_AST{
+    Parser_AST_Type type;
+    Parser_Node node;
+    const std::vector<Token> reference;
 };

@@ -25,6 +25,7 @@ enum class TokenType{
     U64,
     F32,
     F64,
+    MUT,
 
     // Punctuation
     LBRAC,    // '{'
@@ -111,6 +112,7 @@ static const std::unordered_map<std::string, TokenType> keywords{
     {"on", TokenType::ON},
     {"instead", TokenType::INSTEAD},
     {"typegroup", TokenType::TYPEGROUP},
+    {"mut", TokenType::MUT},
 };
 
 static const std::unordered_map<TokenType, std::string> token_word = {
@@ -147,4 +149,5 @@ static const std::unordered_map<TokenType, std::string> token_word = {
     {TokenType::ON, "on"},
     {TokenType::INSTEAD, "instead"},
     {TokenType::TYPEGROUP, "typegroup"},
+    {TokenType::MUT, "mut"},
 };

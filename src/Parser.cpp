@@ -14,7 +14,7 @@ bool is_operator(TokenType type){
 }
 
 bool is_type(TokenType type){
-    if(type == TokenType::I8 || type == TokenType::U8 || type == TokenType::I16 || type == TokenType::U16 || type == TokenType::I32 || type == TokenType::U32 || type == TokenType::I64 || type == TokenType::U64 || type == TokenType::F32 || type == TokenType::F64){
+    if(type == TokenType::I8 || type == TokenType::U8 || type == TokenType::I16 || type == TokenType::U16 || type == TokenType::I32 || type == TokenType::U32 || type == TokenType::I64 || type == TokenType::U64 || type == TokenType::F32 || type == TokenType::F64 || type == TokenType::MUT){
         return true;
     }
     else return false; 
@@ -98,47 +98,68 @@ ExprNode Parse_expression(const std::vector<Token>& expr){
     return root;
 }
 
-AST_NODE let_dec(Parser& parser){
+//* `'let' IDENT [':' TYPE] '=' EXPRESSION ';'`
+Parser_AST let_dec(Parser& parser){
     Declaration_Node dec_node;
     if(parser.check(TokenType::IDENTIFIER)) dec_node.identifier = parser.consume().org_word;
-    else return AST_NODE{};
+    else{
+        parser.consume();
+        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
+                        parser.get_file_name(), Code::AUTO});
+        return Parser_AST{};
+    }
 
     if(parser.check(TokenType::COLON)){
         if(is_type(parser.consume(2).type)){
             dec_node.type = parser.current().type;
             std::cout << "type: " << parser.current().org_word;
         }
-        else return AST_NODE{};
+        /*                
+        struct Error{
+            size_t pos, size, line;
+            const std::vector<Token>& org_line;
+            std::string file_name;
+            Code code;
+        };
+        */
+        else{
+            Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
+                         parser.get_file_name(), Code::TYPE_MISS});
+            return Parser_AST{};
+        }
     }
     else dec_node.type = TokenType::NULL_;
 
     if(parser.check(TokenType::EQUAL)) parser.consume();
-    else return AST_NODE{};
+    else{
+        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
+                        parser.get_file_name(), Code::AUTO});
+        return Parser_AST{};
+    }
 
     ExprNode expr = Parse_expression(parser.left());
     dec_node.expr = std::move(expr);
-
-    return AST_NODE{AST_Type::DECLARATION, Node(std::move(dec_node)), false, false, &parser.line()};
+    return Parser_AST{Parser_AST_Type::DECLARATION, Parser_Node(std::move(dec_node)), parser.line()};
 }
 
-AST_NODE set_and_enforce_statements(Parser& parser){
-    AST_Type type;
+Parser_AST set_and_enforce_statements(Parser& parser){
+    Parser_AST_Type type;
 
     bool enforce = parser.check(TokenType::ENFORCE) ? true : false;
-    if(!parser.check(TokenType::SET) && !enforce) return AST_NODE{};
+    if(!parser.check(TokenType::SET) && !enforce) return Parser_AST{};
     
     parser.consume();
 
     //* `'#set typegroup' IDENT '=' TYPE(s) ';'` BRANCH
     if(parser.check(TokenType::TYPEGROUP)){ 
         parser.consume(); 
-        type = AST_Type::TYPE_GROUP_DEC; 
+        type = Parser_AST_Type::TYPE_GROUP_DEC; 
         Type_group_Declaration_Node dec_node;
 
         if(parser.consume().type == TokenType::IDENTIFIER) dec_node.typegroup = parser.current().org_word;
-        else return AST_NODE{};
+        else return Parser_AST{};
 
-        if(parser.consume().type != TokenType::EQUAL) return AST_NODE{};
+        if(parser.consume().type != TokenType::EQUAL) return Parser_AST{};
         for(Token token : parser.left()) dec_node.types.push_back(token.type);
 
         std::cout << "enforce: " << (enforce ? "yes\n" : "no\n");
@@ -146,7 +167,7 @@ AST_NODE set_and_enforce_statements(Parser& parser){
         std::cout << "types assigned: ";
         for(TokenType type : dec_node.types) std::cout << token_word.at(type) << ' ';
 
-        return {type, Node(dec_node), false, false, &parser.line()};
+        return Parser_AST{type, Parser_Node(dec_node), parser.line()};
     }
 
     //* `'#set infer' TYPE_GROUP 'to' TYPE ';'` BRANCH
@@ -154,7 +175,7 @@ AST_NODE set_and_enforce_statements(Parser& parser){
     else if(parser.check(TokenType::INFER)){
         parser.consume();
     }
-    return AST_NODE{};
+    return Parser_AST{};
 }
 
 /*
@@ -167,30 +188,13 @@ struct AST_NODE{
 };
 */
 
-void AST(Parser& parser){
+Parser_AST parser_AST(Parser& parser){
     switch(parser.current().type){
         case TokenType::LET:
-            let_dec(parser);
+            return let_dec(parser);
             break;
         case TokenType::HASHTAG:
-            set_and_enforce_statements(parser);
+            return set_and_enforce_statements(parser);
             break;
     }
-}
-
-int main(int argc, char** argv){
-    std::cout << "Hello from Tier\n\n";
-
-    std::string file_name = argv[1];
-    std::ifstream read(file_name);
-    std::string temp;
-    std::vector<std::string> lines;
-    
-    while(std::getline(read, temp)) lines.push_back(temp);
-
-    for(std::vector<lexical_token> lex : Stream(lines)){
-        Parser parser(Tokenize(lex));
-        AST(parser);
-    }
-    return 0;
 }

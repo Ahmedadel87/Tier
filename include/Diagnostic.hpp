@@ -7,6 +7,7 @@
 #include "Lexer.hpp"
 
 enum class Code{
+    AUTO,
     TYPE_MISS
 };
 
@@ -18,10 +19,12 @@ struct Error{
 };
 
 constexpr std::array<std::string_view, 4> error_names = {
+    "Unexpected error.",
     "A colon was found, expected a type."
 };
 
 constexpr std::array<std::string_view, 4> expected = {
+    "Error token.",
     "Expected a type before this equal, try removing the colon."
 };
 
