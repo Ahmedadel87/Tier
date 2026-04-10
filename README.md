@@ -1,7 +1,7 @@
 # Tier
-![Tier Logo](assets/Logo.png)\
-
-Code in *Unity*.\
+![Tier Logo](assets/Logo.png)
+\
+Code in *Unity*.
 
 Tier is a statically typed language inspired by C++ and Rust,
 built around a **Tier**ed type system and a unique configuration
