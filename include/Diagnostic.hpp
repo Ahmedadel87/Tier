@@ -24,7 +24,7 @@ constexpr std::array<std::string_view, 4> error_names = {
 };
 
 constexpr std::array<std::string_view, 4> expected = {
-    "Error token.",
+    "Error found here.",
     "Expected a type before this equal, try removing the colon."
 };
 

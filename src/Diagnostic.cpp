@@ -52,7 +52,7 @@ void write_line(Error error){
         highlight = false;
         align = 0;
     }
-    std::cout << "\x1B[0m";
+    std::cout << "\x1B[0m\n";
 }
 
 void Report(const Error& error){
@@ -62,26 +62,3 @@ void Report(const Error& error){
     std::cerr << error_names[int(error.code)];
     write_line(error);
 }
-/*
-int main(int argc, char** argv){
-    std::string file_name = argv[1];
-    std::ifstream read(file_name);
-    std::string temp;
-    std::vector<std::string> lines;
-    while(std::getline(read, temp)) lines.push_back(temp);
-    for(std::vector<lexical_token> lex : Stream(lines)){
-        Error error = Error{lex[2].org_start_pos, lex[2].string.size(), 1, Tokenize(lex), "somefile.txt", Code::TYPE_MISS};
-        Report(error);
-    }
-    
-    * struct Error{
-    *    size_t pos, size, line;
-    *    const std::vector<Token>& org_line;
-    *    std::string file_name;
-    *    Code code;
-    * };
-    
-
-    return 0;
-}
-*/
