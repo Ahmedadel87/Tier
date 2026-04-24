@@ -5,6 +5,8 @@
 #include <string_view>
 #include <unordered_map>
 
+#include <Options.hpp>
+
 enum class TokenType{
 
     // Literals

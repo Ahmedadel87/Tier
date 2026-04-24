@@ -7,10 +7,10 @@ failed = 0
 amount_of_files = 0
 compiler = sys.argv[1]
 
-def run_test(input_file, expected_file):
+def run_test(input_file, expected_file, *flags):
     global failed
     result = subprocess.run(
-        [compiler, input_file],
+        [compiler, input_file, *flags],
         capture_output=True,
         text=True
     )
@@ -28,6 +28,6 @@ for file in os.listdir("lexer/"):
     if file.endswith(".tier"):
         amount_of_files += 1;
         name = file.removesuffix(".tier")
-        run_test(f"lexer/{name}.tier", f"lexer/{name}.expected")
+        run_test(f"lexer/{name}.tier", f"lexer/{name}.expected", "--dump-tokens", "--debug-no-errors")
 
 print(f"{amount_of_files-failed}/{amount_of_files} files passed.")

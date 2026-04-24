@@ -1,4 +1,4 @@
-Hello from Tier
+Hello from Tier!
 
 LET: let
 IDENTIFIER: x
@@ -14,12 +14,6 @@ INT: 3
 IDENTIFIER: z
 RPARA: )
 RPARA: )
-type: i32
-+
-  x
-  *
-    3
-    z
 LET: let
 IDENTIFIER: x
 COLON: :
@@ -36,12 +30,6 @@ IDENTIFIER: y
 INT: 2
 RPARA: )
 RPARA: )
-type: i64
-+
-  72
-  *
-    y
-    2
 LET: let
 IDENTIFIER: x
 COLON: :
@@ -56,12 +44,6 @@ INT: 3
 IDENTIFIER: z
 RPARA: )
 RPARA: )
-type: i32
-+
-  x
-  *
-    3
-    z
 LET: let
 IDENTIFIER: x
 COLON: :
@@ -78,9 +60,5 @@ IDENTIFIER: y
 INT: 2
 RPARA: )
 RPARA: )
-type: i64
-+
-  72
-  *
-    y
-    2
+
+End!

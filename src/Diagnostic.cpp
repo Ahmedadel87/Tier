@@ -56,9 +56,11 @@ void write_line(Error error){
 }
 
 void Report(const Error& error){
-    std::cerr << "\x1B[1;91m[Error::\x1B[93m"; 
-    std::cerr << int(error.code);
-    std::cerr << "\x1B[91m]\x1B[0m in \x1B[3;96m" << error.file_name << "\x1B[0m\n";
-    std::cerr << error_names[int(error.code)];
-    write_line(error);
+    if(!Options::get().debug_no_error){
+        std::cerr << "\x1B[1;91m[Error::\x1B[93m"; 
+        std::cerr << int(error.code);
+        std::cerr << "\x1B[91m]\x1B[0m in \x1B[3;96m" << error.file_name << "\x1B[0m\n";
+        std::cerr << error_names[int(error.code)];
+        write_line(error);
+    }
 }

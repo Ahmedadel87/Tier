@@ -3,6 +3,7 @@
 #include <variant>
 #include "Lexer.hpp"
 #include "AST.hpp"
+#include <Options.hpp>
 
 enum class AST_type{
     DECLARATION,

@@ -1,4 +1,4 @@
-Hello from Tier
+Hello from Tier!
 
 LET: let
 COLON: :
@@ -32,3 +32,5 @@ on: on
 instead: instead
 typegroup: typegroup
 IDENTIFIER: x
+
+End!

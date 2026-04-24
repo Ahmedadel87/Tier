@@ -39,6 +39,10 @@ struct Declaration_Node{
     bool const_;
 };
 
+struct Print{
+    ExprNode expr;
+};
+
 struct Type_group_Declaration_Node{
     std::string typegroup;
     std::vector<TokenType> types; //* Only TokenTypes that are types will be assigned here, ex: i32
@@ -49,7 +53,7 @@ struct Type_group_infer_instead{
     std::vector<TokenType> types; //* Only TokenTypes that are types will be assigned here, ex: i32
 };
 
-using Parser_Node = std::variant<Declaration_Node, Type_group_Declaration_Node>;
+using Parser_Node = std::variant<Declaration_Node, Type_group_Declaration_Node, Print>;
 
 struct Parser_AST{
     Parser_AST_Type type;

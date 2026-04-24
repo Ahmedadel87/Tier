@@ -33,6 +33,8 @@ void print_expr(const ExprNode& node, int indent){
 }
 
 ExprNode Parse_expression(const std::vector<Token>& expr){
+    TokenType prev_token = TokenType::NULL_;
+
     static const std::unordered_map<std::string, int> operator_precedence = {
         {"+", 1},
         {"-", 1},
@@ -93,8 +95,10 @@ ExprNode Parse_expression(const std::vector<Token>& expr){
     }
 
     ExprNode root = std::move(node_stack.back());
-    std::cout << '\n';
-    print_expr(root);
+    if(Options::get().dump_ast){ 
+        std::cout << '\n';
+        print_expr(root);
+    }
     return root;
 }
 
@@ -112,16 +116,8 @@ Parser_AST let_dec(Parser& parser){
     if(parser.check(TokenType::COLON)){
         if(is_type(parser.consume(2).type)){
             dec_node.type = parser.current().type;
-            std::cout << "type: " << parser.current().org_word;
+            if(Options::get().dump_ast) std::cout << "type: " << parser.current().org_word;
         }
-        /*                
-        struct Error{
-            size_t pos, size, line;
-            const std::vector<Token>& org_line;
-            std::string file_name;
-            Code code;
-        };
-        */
         else{
             Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
                          parser.get_file_name(), Code::TYPE_MISS});
@@ -160,12 +156,15 @@ Parser_AST set_and_enforce_statements(Parser& parser){
         else return Parser_AST{};
 
         if(parser.consume().type != TokenType::EQUAL) return Parser_AST{};
-        for(Token token : parser.left()) dec_node.types.push_back(token.type);
 
-        std::cout << "enforce: " << (enforce ? "yes\n" : "no\n");
-        std::cout << "type: " << int(type) << '\n';
-        std::cout << "types assigned: ";
-        for(TokenType type : dec_node.types) std::cout << token_word.at(type) << ' ';
+        for(Token token : parser.left()) dec_node.types.push_back(token.type);
+        
+        if(Options::get().dump_ast){
+            std::cout << "enforce: " << (enforce ? "yes\n" : "no\n");
+            std::cout << "type: " << int(type) << '\n';
+            std::cout << "types assigned: ";
+            for(TokenType type : dec_node.types) std::cout << token_word.at(type) << ' ';
+        }
 
         return Parser_AST{type, Parser_Node(dec_node), parser.line()};
     }
@@ -177,17 +176,36 @@ Parser_AST set_and_enforce_statements(Parser& parser){
     }
     return Parser_AST{};
 }
+Parser_AST print_statement(Parser& parser){
+    if(!parser.check(TokenType::LPARA)){
+        parser.consume();
+        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
+                        parser.get_file_name(), Code::AUTO});
+        return Parser_AST{};
+    }
+    parser.consume();
+    if(parser.at(parser.size()-1).type != TokenType::RPARA){
+        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
+                        parser.get_file_name(), Code::AUTO});
+        return Parser_AST{};
+    }
 
-/*
-struct AST_NODE{
-    AST_Type type;
-    Node node;
-    bool iterable;
-    bool const_;
-    const std::vector<Token>* reference;
-};
-*/
+    std::vector<Token> tokens_to_be_proccessed_for_expressions = parser.left();
+    tokens_to_be_proccessed_for_expressions.pop_back();
 
+    if(tokens_to_be_proccessed_for_expressions.empty()){
+        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
+                        parser.get_file_name(), Code::AUTO});
+        return Parser_AST{};
+    }
+
+    ExprNode expr = Parse_expression(tokens_to_be_proccessed_for_expressions);
+    Print print_node;
+
+    print_node.expr = std::move(expr);
+
+    return Parser_AST{Parser_AST_Type::PRINT, Parser_Node(std::move(print_node)), parser.line()};
+}
 Parser_AST parser_AST(Parser& parser){
     switch(parser.current().type){
         case TokenType::LET:
@@ -196,5 +214,9 @@ Parser_AST parser_AST(Parser& parser){
         case TokenType::HASHTAG:
             return set_and_enforce_statements(parser);
             break;
+        case TokenType::PRINT:
+            return print_statement(parser);
+            break;
     }
+    return Parser_AST{};
 }
