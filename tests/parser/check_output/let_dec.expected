@@ -2,20 +2,28 @@ Hello from Tier!
 
 type: i32
 5
+type: Declaration
+const x i32
 
 5
+type: Declaration
+const x NULL
 
 +
   5
   *
     3
     2
+type: Declaration
+const x NULL
 
 +
   -
     5
     2
   3
+type: Declaration
+const x NULL
 type: f64
 *
   +
@@ -30,5 +38,7 @@ type: f64
           4
           2
         2
+type: Declaration
+const x f64
 
 End!

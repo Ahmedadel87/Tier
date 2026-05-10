@@ -1,36 +1,36 @@
 Hello from Tier!
 
-LET: let
-COLON: :
-I8: i8
-U8: u8
-I16: i16
-U16: u16
-I32: i32
-U32: u32
-I64: i64
-U64: u64
-F32: f32
-F64: f64
-IDENTIFIER: x
-LBRAC: {
-IDENTIFIER: x
-RBRAC: }
-LPARA: (
-RPARA: )
-EQUAL: =
-+: +
--: -
-*: *
-/: /
-PRINT: print
-HASHTAG: #
+let declaration: let
+":": :
+i8: i8
+u8: u8
+i16: i16
+u16: u16
+i32: i32
+u32: u32
+i64: i64
+u64: u64
+f32: f32
+f64: f64
+identifier: x
+"{": {
+identifier: x
+"}": }
+"(": (
+")": )
+"=": =
+"+": +
+"-": -
+"*": *
+"/": /
+print statement: print
+"#": #
 set: set
 enforce: enforce
 infer: infer
 on: on
 instead: instead
 typegroup: typegroup
-IDENTIFIER: x
+identifier: x
 
 End!
