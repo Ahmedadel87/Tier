@@ -145,7 +145,7 @@ static const std::unordered_map<TokenType, std::string> token_word = {
     {TokenType::FLOAT, "float literal"},
     {TokenType::STR, "string literal"},
     {TokenType::IDENTIFIER, "identifier"},
-    {TokenType::HASHTAG, "#"},
+    {TokenType::HASHTAG, "\"#\""},
     {TokenType::SET, "set"},
     {TokenType::ENFORCE, "enforce"},
     {TokenType::INFER, "infer"},
