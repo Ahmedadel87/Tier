@@ -15,6 +15,14 @@ enum class Parser_AST_Type{
     NULL_
 };
 
+static const std::unordered_map<Parser_AST_Type, std::string> parser_ast_type_word = {
+    {Parser_AST_Type::DECLARATION, "Declaration"},
+    {Parser_AST_Type::ASSIGNMENT, "Assignment"},
+    {Parser_AST_Type::TYPE_GROUP_DEC, "Type group declaration"},
+    {Parser_AST_Type::PRINT, "Print statement"},
+    {Parser_AST_Type::NULL_, "Null"}
+};
+
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
@@ -56,6 +64,11 @@ struct Type_group_infer_instead{
 using Parser_Node = std::variant<Declaration_Node, Type_group_Declaration_Node, Print>;
 
 struct Parser_AST{
+    Parser_AST(const Parser_AST&) = delete;
+    Parser_AST& operator=(const Parser_AST&) = delete;
+    Parser_AST(Parser_AST&&) = default;
+    Parser_AST& operator=(Parser_AST&&) = default;
+    
     Parser_AST_Type type;
     Parser_Node node;
     const std::vector<Token> reference;

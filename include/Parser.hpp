@@ -5,6 +5,8 @@
 
 static Token NULL_TOKEN = {0, 0, "", "", TokenType::NULL_};
 
+void output_AST(Parser_AST AST);
+
 bool is_operator(TokenType type);
 
 bool is_type(TokenType type);
@@ -36,15 +38,13 @@ class Parser{
             if(pos + offset >= (int)tokens.size()) return NULL_TOKEN;
             return tokens[pos + offset]; 
         }
-        Token& consume(size_t offset = 1){ 
+        void consume(size_t offset = 1){ 
             pos += offset;
-            if(pos >= (int)tokens.size()) return NULL_TOKEN;
-            return tokens[pos]; 
         }
         size_t size(){
             return tokens.size();
         }
-        bool check(TokenType token, size_t offset = 1){ return (token == peek(offset).type) ? true : false; }
+        bool check(TokenType token, size_t offset = 0){ return (token == peek(offset).type) ? true : false; }
         std::vector<Token> left(){ return std::vector<Token>(tokens.begin() + pos + 1, tokens.end()); }
         std::vector<Token>& line(){ return tokens; }
 };

@@ -4,9 +4,17 @@
 #include <unordered_map>
 #include <memory>
 #include <variant>
-
 #include "Parser.hpp"
 #include "Diagnostic.hpp"
+
+void output_AST(Parser_AST AST){
+    std::cout << "type: " << parser_ast_type_word.at(AST.type) << '\n';
+    switch(AST.type){
+        case Parser_AST_Type::DECLARATION:
+            Declaration_Node node = std::move(std::get<Declaration_Node>(AST.node));
+            std::cout << ((node.const_) ? "const " : "") << node.identifier << ' ' << token_word.at(node.type) << '\n';
+    }
+}
 
 bool is_operator(TokenType type){
     if(type == TokenType::ADD || type == TokenType::SUB || type == TokenType::MUL || type == TokenType::DIV) return true;
@@ -102,91 +110,73 @@ ExprNode Parse_expression(const std::vector<Token>& expr){
     return root;
 }
 
+void call_error(Parser& parser,Code code = Code::AUTO, TokenType expected = TokenType::NULL_, TokenType got = TokenType::NULL_){ 
+    Report(
+           Error{parser.current().org_start_pos, 
+           parser.current().org_word.size(), parser.current().line_num, 
+           parser.line(), parser.get_file_name(), expected, got, code}
+    ); 
+}
+
+bool require(TokenType expected, Parser& parser){
+    if(parser.peek().type == expected){
+        return true;
+    }
+    return false;
+}
+
 //* `'let' IDENT [':' TYPE] '=' EXPRESSION ';'`
+
 Parser_AST let_dec(Parser& parser){
     Declaration_Node dec_node;
-    if(parser.check(TokenType::IDENTIFIER)) dec_node.identifier = parser.consume().org_word;
-    else{
-        parser.consume();
-        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
-                        parser.get_file_name(), Code::AUTO});
-        return Parser_AST{};
-    }
 
-    if(parser.check(TokenType::COLON)){
-        if(is_type(parser.consume(2).type)){
+    if(!require(TokenType::IDENTIFIER, parser)){ 
+        parser.consume();
+        call_error(parser, Code::AUTO, TokenType::IDENTIFIER, parser.current().type);
+        return {};
+    }
+    parser.consume();
+
+    dec_node.identifier = parser.current().org_word;
+
+    if(require(TokenType::COLON, parser)){
+        parser.consume();
+
+        if(is_type(parser.peek().type)){
+            parser.consume();
             dec_node.type = parser.current().type;
-            if(Options::get().dump_ast) std::cout << "type: " << parser.current().org_word;
         }
+
         else{
-            Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
-                         parser.get_file_name(), Code::TYPE_MISS});
+            parser.consume();
+            call_error(parser, Code::TYPE_MISS, TokenType::NULL_, parser.current().type);
             return Parser_AST{};
         }
+        if(Options::get().dump_ast) std::cout << "type: " << parser.current().org_word;
     }
     else dec_node.type = TokenType::NULL_;
 
-    if(parser.check(TokenType::EQUAL)) parser.consume();
-    else{
-        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
-                        parser.get_file_name(), Code::AUTO});
+    if(!require(TokenType::EQUAL, parser)){
+        parser.consume();
+        call_error(parser, Code::AUTO, TokenType::EQUAL, parser.current().type);
         return Parser_AST{};
     }
+    parser.consume();
 
     ExprNode expr = Parse_expression(parser.left());
     dec_node.expr = std::move(expr);
+
     return Parser_AST{Parser_AST_Type::DECLARATION, Parser_Node(std::move(dec_node)), parser.line()};
 }
 
-Parser_AST set_and_enforce_statements(Parser& parser){
-    Parser_AST_Type type;
-
-    bool enforce = parser.check(TokenType::ENFORCE) ? true : false;
-    if(!parser.check(TokenType::SET) && !enforce) return Parser_AST{};
-    
-    parser.consume();
-
-    //* `'#set typegroup' IDENT '=' TYPE(s) ';'` BRANCH
-    if(parser.check(TokenType::TYPEGROUP)){ 
-        parser.consume(); 
-        type = Parser_AST_Type::TYPE_GROUP_DEC; 
-        Type_group_Declaration_Node dec_node;
-
-        if(parser.consume().type == TokenType::IDENTIFIER) dec_node.typegroup = parser.current().org_word;
-        else return Parser_AST{};
-
-        if(parser.consume().type != TokenType::EQUAL) return Parser_AST{};
-
-        for(Token token : parser.left()) dec_node.types.push_back(token.type);
-        
-        if(Options::get().dump_ast){
-            std::cout << "enforce: " << (enforce ? "yes\n" : "no\n");
-            std::cout << "type: " << int(type) << '\n';
-            std::cout << "types assigned: ";
-            for(TokenType type : dec_node.types) std::cout << token_word.at(type) << ' ';
-        }
-
-        return Parser_AST{type, Parser_Node(dec_node), parser.line()};
-    }
-
-    //* `'#set infer' TYPE_GROUP 'to' TYPE ';'` BRANCH
-    //* `'#set infer' TYPE_GROUP 'instead' TYPE_GROUP ';'`
-    else if(parser.check(TokenType::INFER)){
-        parser.consume();
-    }
-    return Parser_AST{};
-}
 Parser_AST print_statement(Parser& parser){
-    if(!parser.check(TokenType::LPARA)){
+    if(!require(TokenType::LPARA, parser)){
         parser.consume();
-        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
-                        parser.get_file_name(), Code::AUTO});
+        call_error(parser, Code::AUTO, TokenType::LPARA, parser.current().type);
         return Parser_AST{};
     }
-    parser.consume();
     if(parser.at(parser.size()-1).type != TokenType::RPARA){
-        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
-                        parser.get_file_name(), Code::AUTO});
+        call_error(parser, Code::AUTO, TokenType::RPARA, parser.at(parser.size()-1).type);
         return Parser_AST{};
     }
 
@@ -194,8 +184,7 @@ Parser_AST print_statement(Parser& parser){
     tokens_to_be_proccessed_for_expressions.pop_back();
 
     if(tokens_to_be_proccessed_for_expressions.empty()){
-        Report(Error{parser.current().org_start_pos, parser.current().org_word.size(), parser.current().line_num, parser.line(), 
-                        parser.get_file_name(), Code::AUTO});
+        call_error(parser);
         return Parser_AST{};
     }
 
@@ -206,14 +195,13 @@ Parser_AST print_statement(Parser& parser){
 
     return Parser_AST{Parser_AST_Type::PRINT, Parser_Node(std::move(print_node)), parser.line()};
 }
+
 Parser_AST parser_AST(Parser& parser){
     switch(parser.current().type){
         case TokenType::LET:
             return let_dec(parser);
             break;
-        case TokenType::HASHTAG:
-            return set_and_enforce_statements(parser);
-            break;
+
         case TokenType::PRINT:
             return print_statement(parser);
             break;

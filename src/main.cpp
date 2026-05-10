@@ -36,6 +36,7 @@ int main(int argc, char** argv){
         std::vector<Parser_AST> temp;
         Parser_AST temp_AST = parser_AST(parser);
         if(Options::get().debug_status) std::cout << "AST created\n\n";
+        if(Options::get().dump_ast) output_AST(std::move(temp_AST));
 
         temp.push_back(std::move(temp_AST));
         if(Options::get().debug_status) std::cout << "Starting semantic\n\n";
