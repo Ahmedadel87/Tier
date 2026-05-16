@@ -27,7 +27,7 @@ constexpr std::array<std::string_view, 4> error_names = {
 
 constexpr std::array<std::string_view, 4> expected = {
     "\x1b[3;33m{g}\x1B[0m found here instead of \x1b[3;33m{e}\x1B[0m",
-    "expected a type before this \x1b[3;33m{g}\x1B[0m."
+    "expected a type after \x1b[3;33m\':\'\x1b[0m but found \x1b[3;33m{g}\x1B[0m."
 };
 
 constexpr std::array<std::string_view, 4> hints = {
