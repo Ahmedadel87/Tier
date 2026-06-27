@@ -18,11 +18,13 @@ namespace SourceManager
     struct SourceLocation
     {
         uint32_t offset;
+        uint16_t length;
         FileID file_id;
     };
 
     struct FileEntry
     {
+        FileID id;
         fs::path path;
         std::string contents;
         std::vector<uint32_t> line_offsets = {0};
@@ -36,8 +38,10 @@ namespace SourceManager
 
         public:
             SourceManager();
-            FileID add_file(const fs::path& path); 
+            [[nodiscard("To access the file the id is required.")]] FileID add_file(const fs::path& path); 
+            void update_file(FileEntry& new_file);
             const FileEntry& get_file(const FileID& id) const;
             const std::pair<uint32_t, uint32_t> get_line_column(const SourceLocation location);
+            std::string_view get_string(const SourceLocation& location) const;
     };
 }

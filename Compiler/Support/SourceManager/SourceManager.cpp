@@ -1,5 +1,6 @@
 #include "SourceManager.hpp"
 #include <algorithm>
+#include <iostream>
 
 namespace SourceManager
 {
@@ -32,12 +33,28 @@ namespace SourceManager
         if(!valid_path(path)) throw std::runtime_error("Invalid path.");
 
         FileEntry entry;
+        entry.id = nextID;
         entry.path = path;
         entry.contents = read_file(path);
         entry.line_offsets = std::vector<uint32_t>{0};
+
+        for (size_t i = 0; i < entry.contents.size(); i++)
+        {
+            char c = entry.contents[i];
+
+            if (c == '\n')
+            {
+                entry.line_offsets.push_back(i + 1);
+            }
+        }
         
         id_to_file[nextID] = entry;
         return nextID++;
+    }
+
+    void SourceManager::update_file(FileEntry& new_file)
+    {
+        id_to_file[new_file.id] = new_file;
     }
 
     const FileEntry& SourceManager::get_file(const FileID& id) const
@@ -56,4 +73,13 @@ namespace SourceManager
         };
     }
 
+    std::string_view SourceManager::get_string(const SourceLocation& location) const
+    {
+        const FileEntry& file = get_file(location.file_id);
+        
+        return std::string_view(
+            file.contents.data() + location.offset,
+            location.length
+        );
+    }
 }

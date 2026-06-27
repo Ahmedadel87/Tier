@@ -8,18 +8,30 @@ namespace Token
 
     enum class TokenType 
     {
+        // Keywords
         Let,
+
+        // Operators
+        Plus,
+        Equal,
+        Subtration,
+        Multiplication,
+        Division,
+        Semicolon,
+
+        // Literals
         Identifier,
         IntegerLiteral,
         FloatLiteral,
-        String
+        String,
+
+        // Special
+        EoF
     };
 
     struct Token 
     {
         TokenType type;
-        std::string_view lexeme;
         SourceManager::SourceLocation location;
     };
-
 }
