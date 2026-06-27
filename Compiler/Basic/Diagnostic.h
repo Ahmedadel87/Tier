@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../Support/SourceManager/SourceManager.hpp"
 
 namespace Diagnostic
@@ -15,10 +17,15 @@ namespace Diagnostic
         // TODO: fill errors
     };
 
-    struct Diagnostic
+    struct DiagnosticInfo
     {
         DiagnosticID diagnostic_id;
         Severity severity;
         SourceManager::SourceLocation location;
+    };
+
+    struct LexError : DiagnosticInfo
+    {
+        std::string msg;
     };
 }
