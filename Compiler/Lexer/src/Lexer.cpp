@@ -21,9 +21,10 @@ namespace Lexer
 
     char Lexer::advance()
     {
-        ++offset;
-        if(offset >= contents.size()) return '\0';
-        return contents[offset];
+        if (offset >= contents.size())
+            return '\0';
+
+        return contents[offset++];
     }
 
     bool Lexer::match(const char c)
@@ -39,7 +40,7 @@ namespace Lexer
 
     bool Lexer::is_eof() const
     {
-        return current() == '\0';
+        return offset >= contents.size();
     }
 
     bool is_operator(char c)
@@ -59,8 +60,6 @@ namespace Lexer
             case ';':
                 return true;
             case '!':
-                return true;
-            case 'j':
                 return true;
             default:
                 return false;
@@ -118,7 +117,7 @@ namespace Lexer
         }
     }
 
-    std::expected<Token::Token, Diagnostic::LexError> Lexer::lex_numeric_literal()
+    std::expected<Token::Token, Diag::Diagnostic> Lexer::lex_numeric_literal()
     {
         uint32_t token_offset = offset;
         uint16_t length = 0;
@@ -132,7 +131,7 @@ namespace Lexer
         return Token::Token{Token::TokenType::IntegerLiteral, SourceManager::SourceLocation{token_offset, length, source_manager.get_file(file_id).id}};
     }
 
-    std::expected<Token::Token, Diagnostic::LexError> Lexer::lex_identifier()
+    std::expected<Token::Token, Diag::Diagnostic> Lexer::lex_identifier()
     {
         uint32_t token_offset = offset;
 		uint16_t length = 0;
@@ -143,17 +142,17 @@ namespace Lexer
             advance();
         }
 
-        return Token::Token{tokenize_keyword(source_manager.get_string({token_offset, length})), SourceManager::SourceLocation{token_offset, length, source_manager.get_file(file_id).id}};
+        return Token::Token{tokenize_keyword(source_manager.get_string({token_offset, length, file_id})), SourceManager::SourceLocation{token_offset, length, source_manager.get_file(file_id).id}};
     }
 
-    std::expected<Token::Token, Diagnostic::LexError> Lexer::lex_operator()
+    std::expected<Token::Token, Diag::Diagnostic> Lexer::lex_operator()
     {
         Token::Token op_token = {tokenize_operator(current()), SourceManager::SourceLocation{offset, 1, file_id}};
         advance();
         return op_token;  
     }
 
-    std::expected<Token::Token, Diagnostic::LexError> Lexer::next_token()
+    std::expected<Token::Token, Diag::Diagnostic> Lexer::next_token()
     {
         //* Lexer expects to start after the last token.
 
@@ -171,6 +170,14 @@ namespace Lexer
         if(is_valid_ident_char(current()))
             return lex_identifier();
 
-        return std::unexpected(Diagnostic::LexError{"Unexpected Character"});
+        Diag::DiagnosticBuilder builder;
+
+        builder
+            .id(Diag::DiagnosticID::InvalidCharacter)
+            .severity(Diag::Severity::Fatal)
+            .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id})
+            .add_argument(current());
+
+        return std::unexpected(builder.build());
     }
 }

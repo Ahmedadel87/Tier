@@ -57,12 +57,12 @@ namespace SourceManager
         id_to_file[new_file.id] = new_file;
     }
 
-    const FileEntry& SourceManager::get_file(const FileID& id) const
+    const FileEntry& SourceManager::get_file(const FileID id) const
     {
         return id_to_file.at(id);
-    }
+    }   
 
-    const std::pair<uint32_t, uint32_t> SourceManager::get_line_column(const SourceLocation location) 
+    std::pair<uint32_t, uint32_t> SourceManager::get_line_column(const SourceLocation& location) const
     {
         const FileEntry& file = get_file(location.file_id);
         auto it = std::upper_bound(file.line_offsets.begin(), file.line_offsets.end(), location.offset);
