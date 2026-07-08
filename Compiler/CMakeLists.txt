@@ -13,12 +13,14 @@ set(SOURCES
     Lexer/src/Lexer.cpp
 
     Support/SourceManager/SourceManager.cpp
+
+    Diagnostic/Diagnostic.cpp
 )
 
 # Headers (optional, for IDE visibility)
 set(HEADERS
-    Basic/Diagnostic.h
-    Basic/Token.h
+    Basic/Diagnostic.hpp
+    Basic/Token.hpp
 
     Lexer/include/Lexer.hpp
 

@@ -1,6 +1,7 @@
 #include "Lexer/include/Lexer.hpp"
 #include "Support/SourceManager/SourceManager.hpp"
-#include "Basic/Token.h"
+#include "Basic/Token.hpp"
+#include "Basic/Diagnostic.hpp"
 #include <chrono>
 #include <fstream>
 
@@ -30,7 +31,6 @@ int main(int argc, char** argv){
     SourceManager::FileID file_id = source_manager.add_file(path);
 
     Lexer::Lexer lex(source_manager, file_id);
-    std::pair<Token::Token, bool> lex_token_and_status;
 
     auto start = std::chrono::steady_clock::now();
 
@@ -41,13 +41,19 @@ int main(int argc, char** argv){
         
         if(result)
         {
-            // Token::Token token = *result;
+            Token::Token token = *result;
 
-            if(result->type == Token::TokenType::EoF) break;
+            if(token.type == Token::TokenType::EoF) break;
             dump_token(*result);
             // std::cout << "Token(" << sizeof(token) << " bytes)\n   L-> type: " << Lexer::out_keywords.at(token.type) << "(" << sizeof(token.type) << " bytes)\n   L-> offset: " << token.location.offset << "(" << sizeof(token.location.offset) <<" bytes)\n   L-> length: " << token.location.length << "(" << sizeof(token.location.length) << " bytes)\n   L-> file id: " << token.location.file_id << "(" << sizeof(token.location.file_id) << " bytes)\n   Obtained:\n      L-> lexeme: " << source_manager.get_string(token.location) << "\n      L-> line: " << source_manager.get_line_column(token.location).first << "\n      L-> column: " << source_manager.get_line_column(token.location).second << "\n\n";
         }
-        // else std::cout << result.error().msg;
+        else 
+        {
+            Diag::DiagnosticRenderer renderer(source_manager, result.error());
+            renderer.render();
+            
+            break;
+        }
 
     }
 

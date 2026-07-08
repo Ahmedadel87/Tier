@@ -4,10 +4,10 @@
 #include <iostream>
 #include <unordered_map>
 #include <expected>
-#include "../../Basic/Token.h"
+#include "../../Basic/Token.hpp"
 #include "../../Support/SourceManager/SourceManager.hpp"
-#include "../../Basic/Diagnostic.h"
-
+#include "../../Basic/Diagnostic.hpp"
+ 
 namespace fs = std::filesystem;
 
 namespace Lexer
@@ -16,6 +16,14 @@ namespace Lexer
     static const std::unordered_map<std::string_view, Token::TokenType> keywords
     {
         {"let", Token::TokenType::Let},
+        {"i8", Token::TokenType::I8},
+        {"u8", Token::TokenType::U8},
+        {"i16", Token::TokenType::I16},
+        {"u16", Token::TokenType::U16},
+        {"i32", Token::TokenType::I32},
+        {"u32", Token::TokenType::U32},
+        {"i64", Token::TokenType::I64},
+        {"u64", Token::TokenType::U64},
     };
 
     static const std::unordered_map<Token::TokenType, std::string_view> out_keywords
@@ -24,8 +32,7 @@ namespace Lexer
         {Token::TokenType::Equal, "="},
         {Token::TokenType::Plus, "+"},  
         {Token::TokenType::Identifier, "identifier"},
-        {Token::TokenType::IntegerLiteral, "integer literal"},
-        {Token::TokenType::Semicolon, "semi-colon"}  
+        {Token::TokenType::IntegerLiteral, "integer literal"},  
     };
 
     bool is_operator(char c);
@@ -53,16 +60,16 @@ namespace Lexer
 
             bool is_digit(char c) const;
 
-            std::expected<Token::Token, Diagnostic::LexError> lex_numeric_literal();
-            std::expected<Token::Token, Diagnostic::LexError> lex_identifier();
-            std::expected<Token::Token, Diagnostic::LexError> lex_operator();
+            std::expected<Token::Token, Diag::Diagnostic> lex_numeric_literal();
+            std::expected<Token::Token, Diag::Diagnostic> lex_identifier();
+            std::expected<Token::Token, Diag::Diagnostic> lex_operator();
 
         public:
             Lexer(SourceManager::SourceManager& source_manager, SourceManager::FileID id) : 
                 source_manager(source_manager) , file_id(id) , contents(source_manager.get_file(id).contents)
             {}
 
-            std::expected<Token::Token, Diagnostic::LexError> next_token();
+            std::expected<Token::Token, Diag::Diagnostic> next_token();
     };
 
 }
