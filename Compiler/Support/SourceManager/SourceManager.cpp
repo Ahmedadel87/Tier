@@ -4,6 +4,11 @@
 
 namespace SourceManager
 {
+    SourceLocation after(SourceLocation location)
+    {
+        return {.offset=location.offset+location.length, .length=0, .file_id=location.file_id};
+    }
+
     const bool valid_path(const fs::path& path)
     {
         if(fs::exists(path) && !path.empty())
@@ -36,6 +41,7 @@ namespace SourceManager
         entry.id = nextID;
         entry.path = path;
         entry.contents = read_file(path);
+        entry.contents += ' ';
         entry.line_offsets = std::vector<uint32_t>{0};
 
         for (size_t i = 0; i < entry.contents.size(); i++)
@@ -48,6 +54,8 @@ namespace SourceManager
             }
         }
         
+        entry.line_offsets.push_back(entry.contents.size()+1); //* WARNING, IF YOU REMOVE THE +1 THE ENTIRE SOURCE MANAGER BREAKS
+
         id_to_file[nextID] = entry;
         return nextID++;
     }
@@ -80,6 +88,16 @@ namespace SourceManager
         return std::string_view(
             file.contents.data() + location.offset,
             location.length
+        );
+    }
+
+    std::string_view SourceManager::get_line(FileID file_id, size_t line_number) const
+    {
+        const FileEntry& file = get_file(file_id);
+        
+        return std::string_view(
+            file.contents.data() + file.line_offsets[line_number],
+            (file.line_offsets[line_number + 1] - 1) - file.line_offsets[line_number]
         );
     }
 }

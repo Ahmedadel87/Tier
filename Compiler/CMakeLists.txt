@@ -15,6 +15,10 @@ set(SOURCES
     Support/SourceManager/SourceManager.cpp
 
     Diagnostic/Diagnostic.cpp
+
+    Parser/src/Parser.cpp
+
+    Basic/Token.cpp
 )
 
 # Headers (optional, for IDE visibility)
@@ -25,6 +29,8 @@ set(HEADERS
     Lexer/include/Lexer.hpp
 
     Support/SourceManager/SourceManager.hpp
+
+    Parser/include/Parser.hpp
 )
 
 add_executable(compiler

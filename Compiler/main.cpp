@@ -2,14 +2,13 @@
 #include "Support/SourceManager/SourceManager.hpp"
 #include "Basic/Token.hpp"
 #include "Basic/Diagnostic.hpp"
+#include "Parser/include/Parser.hpp"
 #include <chrono>
-#include <fstream>
-
-std::ofstream write("let_dec.tier");
+#include <iostream>
 
 void dump_token(Token::Token& tok)
 {
-    write << static_cast<uint16_t>(tok.type) << '|' << tok.location.file_id << '|' << tok.location.offset << '|' << tok.location.length << '\n';
+    std::clog << static_cast<uint16_t>(tok.type) << '|' << tok.location.file_id << '|' << tok.location.offset << '|' << tok.location.length << '\n';
 }
 
 int main(int argc, char** argv){
@@ -17,52 +16,39 @@ int main(int argc, char** argv){
 
     if(argc < 2)
     {
-        std::cerr << "No path provided.";
+        std::clog << "No path provided.";
         exit(1);
     }
     fs::path path = argv[1];
     if(!fs::exists(path))
     {
-        std::cerr << "Path doesn't exist.";
+        std::clog << "Path doesn't exist.";
         exit(1);
     }
 
     SourceManager::SourceManager source_manager;
     SourceManager::FileID file_id = source_manager.add_file(path);
 
-    Lexer::Lexer lex(source_manager, file_id);
+    Diag::DiagnosticEngine diag_engine;
+
+    Lexer::Lexer lexer(source_manager, file_id);
 
     auto start = std::chrono::steady_clock::now();
 
+    Parser::Parser parser(lexer, source_manager, diag_engine);
 
-    while(true)
-    {
-        auto result = lex.next_token();
-        
-        if(result)
-        {
-            Token::Token token = *result;
+    parser.parse();
 
-            if(token.type == Token::TokenType::EoF) break;
-            dump_token(*result);
-            // std::cout << "Token(" << sizeof(token) << " bytes)\n   L-> type: " << Lexer::out_keywords.at(token.type) << "(" << sizeof(token.type) << " bytes)\n   L-> offset: " << token.location.offset << "(" << sizeof(token.location.offset) <<" bytes)\n   L-> length: " << token.location.length << "(" << sizeof(token.location.length) << " bytes)\n   L-> file id: " << token.location.file_id << "(" << sizeof(token.location.file_id) << " bytes)\n   Obtained:\n      L-> lexeme: " << source_manager.get_string(token.location) << "\n      L-> line: " << source_manager.get_line_column(token.location).first << "\n      L-> column: " << source_manager.get_line_column(token.location).second << "\n\n";
-        }
-        else 
-        {
-            Diag::DiagnosticRenderer renderer(source_manager, result.error());
-            renderer.render();
-            
-            break;
-        }
+    Diag::DiagnosticRenderer renderer(diag_engine.get_all_diagnostics(), source_manager);
 
-    }
+    renderer.render_all();
 
     auto end = std::chrono::steady_clock::now();
 
     double seconds =
         std::chrono::duration<double>(end - start).count();
 
-    std::cout << seconds;
+    std::cout << "\nTime taken: " << seconds << "sec\n";
 
     return 0;
 }

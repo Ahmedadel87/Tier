@@ -1,8 +1,22 @@
 #include "../include/Lexer.hpp"
 #include "../../Support/SourceManager/SourceManager.hpp"
-#include <variant>
+
+#include <unordered_map>
 #include <cctype>
 #include <expected>
+
+static const std::unordered_map<std::string_view, Token::TokenType> keywords
+{
+    {"let", Token::TokenType::Let},
+    {"i8", Token::TokenType::I8},
+    {"u8", Token::TokenType::U8},
+    {"i16", Token::TokenType::I16},
+    {"u16", Token::TokenType::U16},
+    {"i32", Token::TokenType::I32},
+    {"u32", Token::TokenType::U32},
+    {"i64", Token::TokenType::I64},
+    {"u64", Token::TokenType::U64},
+};
 
 namespace Lexer
 {    
@@ -44,7 +58,7 @@ namespace Lexer
     }
 
     bool is_operator(char c)
-    {
+    {   
         switch(c)
         {
             case '=':
@@ -58,6 +72,8 @@ namespace Lexer
             case '*':
                 return true;
             case ';':
+                return true;
+            case ':':
                 return true;
             case '!':
                 return true;
@@ -82,6 +98,8 @@ namespace Lexer
                 return Token::TokenType::Multiplication;
             case ';':
                 return Token::TokenType::Semicolon;
+            case ':':
+                return Token::TokenType::Colon;
             case '!':
                 return Token::TokenType::Identifier;
             default:
@@ -128,6 +146,33 @@ namespace Lexer
             advance();
         }
 
+        if(current() == 'e')
+        { 
+            if(!is_digit(peek()))
+            {
+                Diag::DiagnosticBuilder diagnostic_builder;
+
+                diagnostic_builder
+                    .id(Diag::DiagnosticID::IncompleteScientificNotation)
+                    .severity(Diag::Severity::Error)
+                    .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id});
+
+                diagnostic_builder.add_hint(Diag::AddHint{.location = {.offset = this->offset, .length = 1, .file_id = this->file_id}, .add="0"});
+
+                return std::unexpected(diagnostic_builder.build());
+            }
+
+            advance();
+            length++;
+
+            while(is_digit(current()))
+            {
+                advance();
+                length++;
+            }
+            return Token::Token{Token::TokenType::FloatLiteral, SourceManager::SourceLocation{token_offset, length, source_manager.get_file(file_id).id}};
+        }
+
         return Token::Token{Token::TokenType::IntegerLiteral, SourceManager::SourceLocation{token_offset, length, source_manager.get_file(file_id).id}};
     }
 
@@ -159,7 +204,7 @@ namespace Lexer
         skip_space();
 
         if(is_eof()) 
-            return Token::Token{Token::TokenType::EoF};
+            return Token::Token{Token::TokenType::EoF, {offset, 0, file_id}};
 
         if(is_digit(current()))
             return lex_numeric_literal();
@@ -170,14 +215,13 @@ namespace Lexer
         if(is_valid_ident_char(current()))
             return lex_identifier();
 
-        Diag::DiagnosticBuilder builder;
+        Diag::DiagnosticBuilder diagnostic_builder;
 
-        builder
+        diagnostic_builder
             .id(Diag::DiagnosticID::InvalidCharacter)
             .severity(Diag::Severity::Fatal)
-            .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id})
-            .add_argument(current());
+            .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id});
 
-        return std::unexpected(builder.build());
+        return std::unexpected(diagnostic_builder.build());
     }
 }
