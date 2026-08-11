@@ -1,46 +1,92 @@
-#include "../../Lexer/include/Lexer.hpp"
-#include "../../AST/AST.hpp"
+#include "Token.hpp"
+#include "Lexer.hpp"
+#include "SourceManager.hpp"
+#include "Diagnostic.hpp"
+#include "AST.hpp"
+#include "MemoryManager.hpp"
 
-#include <optional>
-
-namespace Parser
+template<typename AST>
+class ActionResult
 {
-    class Parser
-    {
-        private:
-            Lexer::Lexer& lexer;
+    private:
+        bool usable;
 
-            SourceManager::SourceManager& source_manager;
+        AST ast;
 
-            Diag::DiagnosticEngine& diag_engine;
+    public:
+        explicit ActionResult(bool p_usable)
+        {
+            usable = p_usable;
+        }
 
-            Token::Token prev_token;
-            Token::Token current_token;
+        explicit ActionResult(AST p_ast)
+        {
+            usable = true;
+            ast = std::move(p_ast);
+        }
 
-            Token::Token previous();
-            Token::Token peek();
+        bool isUsable() const
+        {
+            return usable;
+        }
 
-            bool advance(); //* returns true if it consumed, returns false if it couldn't [[likely]] due to EOF
+        AST& get()
+        {
+            return ast;
+        }
+};
 
-            bool expect(Token::TokenType expected_type); //* returns true if type == expected type and advances, else returns false
-            bool expect_type();
+using StmtResult = ActionResult<AST::Stmt>;
+using ExprResult = ActionResult<AST::Expr*>;
+using TypeResult = ActionResult<AST::Type>;
 
-            std::expected<AST::AST, Diag::Diagnostic> parse_type();
+inline StmtResult StmtError() { return StmtResult(false); }
+inline ExprResult ExprError() { return ExprResult(false); }
+inline TypeResult TypeError() { return TypeResult(false); }
 
-            std::expected<AST::AST, Diag::Diagnostic> parse_expr();
+class Parser
+{
+    private:
 
-            std::expected<AST::AST, std::vector<Diag::Diagnostic>> parse_let_dec();
+        Mem::Arena<1024> arena; //* each block is 1024 bytes (1 kilobyte)
 
-        public:
-            Parser(Lexer::Lexer& lexer, SourceManager::SourceManager& source_manager, Diag::DiagnosticEngine& diag_engine)
-                : lexer(lexer), source_manager(source_manager), diag_engine(diag_engine)
-            {
-                auto result = lexer.next_token();
+        Lexer::Lexer& lexer;
+        SourceManager::SourceManager& source_manager;
 
-                if(result) current_token = *result;
-                else diag_engine.report(std::move(result.error()));
-            }
+        // Diagnostics
 
-            std::optional<AST::AST> parse();
-    };
-}
+        Diag::DiagnosticEngine& diag_engine;
+
+        void diagExpected(Token::TokenType expected);
+        void diagExpected(std::string expected);
+
+        void diagExpected(Token::TokenType expected, Diag::FixItHint hint);
+        void diagExpected(std::string expected, Diag::FixItHint hint);
+    
+        Diag::FixItHint Hint(Token::TokenType expected, std::vector<Token::TokenType> types);
+
+        Token::Token Tok; //* current tok
+        Token::Token peekTok; //* next tok
+
+        bool advance(); //* fails on fatality
+
+        ExprResult parse_expr();
+        ExprResult parse_additive();
+        ExprResult parse_multiplicative();
+        ExprResult parse_unary();
+        ExprResult parse_primary();
+
+        void print_expr(AST::Expr* expr, uint16_t depth);
+
+        TypeResult parse_type();
+        StmtResult parse_let_dec();
+
+        void init();
+
+    public:
+        Parser(Lexer::Lexer& lexer, SourceManager::SourceManager& source_manager, Diag::DiagnosticEngine& diag_engine)
+            : lexer(lexer), source_manager(source_manager), diag_engine(diag_engine)
+        {}
+
+        StmtResult parse();
+};

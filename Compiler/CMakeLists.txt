@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Source files
 set(SOURCES
     main.cpp
 
@@ -17,18 +16,22 @@ set(SOURCES
     Diagnostic/Diagnostic.cpp
 
     Parser/src/Parser.cpp
+    Parser/src/ParserDiag.cpp
 
     Basic/Token.cpp
 )
 
-# Headers (optional, for IDE visibility)
 set(HEADERS
+    AST/AST.hpp
+
     Basic/Diagnostic.hpp
     Basic/Token.hpp
 
     Lexer/include/Lexer.hpp
 
     Support/SourceManager/SourceManager.hpp
+
+    Support/MemoryManager/MemoryManager.hpp
 
     Parser/include/Parser.hpp
 )
@@ -47,8 +50,10 @@ target_compile_options(compiler PRIVATE
 
 target_include_directories(compiler PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/AST
     ${CMAKE_CURRENT_SOURCE_DIR}/Basic
     ${CMAKE_CURRENT_SOURCE_DIR}/Lexer/include
     ${CMAKE_CURRENT_SOURCE_DIR}/Support/SourceManager
+    ${CMAKE_CURRENT_SOURCE_DIR}/Support/MemoryManager
+    ${CMAKE_CURRENT_SOURCE_DIR}/Parser/include
 )

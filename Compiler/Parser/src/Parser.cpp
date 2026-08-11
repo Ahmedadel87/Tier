@@ -1,321 +1,329 @@
-#include "../../Lexer/include/Lexer.hpp"
-#include "../../Support/SourceManager/SourceManager.hpp"
-#include "../../Basic/Token.hpp"
-#include "../../Basic/Diagnostic.hpp"
-#include "../include/Parser.hpp"
-
+#include "Parser.hpp"
+#include <assert.h>
 #include <iostream>
 
-namespace Parser
+using namespace Token;
+
+bool Parser::advance() //* fails on fatality
 {
-    Token::Token Parser::peek()
+    auto result = lexer.next_token();
+
+    if(result)
     {
-        return current_token;
+        Tok = peekTok;
+        peekTok = *result;
+        return true;
     }
 
-    Token::Token Parser::previous()
-    {
-        return prev_token;
-    }
+    diag_engine.report(std::move(result.error()));
 
-    bool Parser::advance() //* returns true if it consumed, returns false if it couldn't [[likely]] due to EOF
-    {
-        prev_token = current_token;
+    return false;
+}
 
+void Parser::init()
+{
+    while(true)
+    {
         auto result = lexer.next_token();
 
-        if(result) 
-        {
-            if(result->type == Token::TokenType::EoF) return false;
+        if(result)
+        { 
+            Tok = *result;
 
-            current_token = *result;
+            auto result2 = lexer.next_token();
 
-            return true;
-        }
+            if(result2) peekTok = *result2; 
 
-        else
-        {
-            diag_engine.report(std::move(result.error()));
-            
-            return false;
+            return;
         }
     }
+}
 
-    bool Parser::expect(Token::TokenType expected_type) //* returns true if type == expected type and advances, else returns false
+StmtResult Parser::parse()
+{
+    init(); //* starts us on a valid token.
+
+    using enum TokenType;
+
+    switch(Tok.type)
     {
-        if(peek().type == expected_type)
-        {
-            if(advance()) return true;
-        }
-
-        return false;
+        case Let:
+            return parse_let_dec();
     }
 
-    bool Parser::expect_type()
+    return StmtError();
+}
+
+void Parser::print_expr(AST::Expr* expr, uint16_t depth = 0)
+{
+    if(expr->is(AST::Expr::Kind::BinaryExpr))
     {
-        switch(peek().type)
-        {
-            case Token::TokenType::I8:  if(advance()) return true;
-            case Token::TokenType::U8:  if(advance()) return true;
-            case Token::TokenType::I16: if(advance()) return true;
-            case Token::TokenType::U16: if(advance()) return true;
-            case Token::TokenType::I32: if(advance()) return true;
-            case Token::TokenType::U32: if(advance()) return true;
-            case Token::TokenType::I64: if(advance()) return true;
-            case Token::TokenType::U64: if(advance()) return true;
-        }
-
-        return false;
-    }
-
-    std::expected<AST::AST, Diag::Diagnostic> Parser::parse_type()
-    {
-        if(!expect_type())
-        {
-            Diag::DiagnosticBuilder diagnostic_builder;
-
-            diagnostic_builder
-                .id(Diag::DiagnosticID::Auto)
-                .severity(Diag::Severity::Error)
-                .primary_location(after(previous().location))
-                .add_higlight
-                (
-                    Diag::Highlight{}
-                        .location(after(previous().location))
-                        .message
-                        (   
-                            Diag::Message{}
-                                .template_id(Diag::DiagnosticID::ExpectedAfter)
-                                .add_argument(Token::pretty_token(previous().type, source_manager.get_string(previous().location)))
-                        )
-                        .secondary()
-                )
-                .add_higlight
-                (
-                    Diag::Highlight{}
-                        .location(peek().location)
-                        .message
-                        (   
-                            Diag::Message{}
-                                .template_id(Diag::DiagnosticID::Auto)
-                                .add_argument(std::string("<type>"))
-                                .add_argument(Token::pretty_token(peek().type, source_manager.get_string(peek().location)))
-                        )
-                        .primary()
-                );
-                //.add_secondary_location(peek().location)
-                //.add_argument(std::string_view("<type>"))
-                //.add_argument(Token::pretty_token(peek().type, source_manager.get_string(peek().location)));
-
-            return std::unexpected(diagnostic_builder.build());
-        }
-
-        return AST::AST{};
-    }
-
-    std::expected<AST::AST, Diag::Diagnostic> Parser::parse_expr()
-    {
-        if(!expect(Token::TokenType::IntegerLiteral))
-        {
-            Diag::DiagnosticBuilder diagnostic_builder;
-
-            diagnostic_builder
-                .id(Diag::DiagnosticID::Auto)
-                .severity(Diag::Severity::Error)
-                .primary_location(peek().location)
-                .add_higlight
-                (
-                    Diag::Highlight{}
-                        .location(after(previous().location))
-                        .message
-                        (   
-                            Diag::Message{}
-                                .template_id(Diag::DiagnosticID::Auto)
-                                .add_argument(std::string("<expr>"))
-                                .add_argument(Token::pretty_token(peek().type, source_manager.get_string(peek().location)))
-                        )
-                        .primary()
-                );
-                //.add_argument(std::string_view("<expr>"))
-                //.add_argument(Token::pretty_token(peek().type, source_manager.get_string(peek().location)));
+        auto* binary_expr = static_cast<AST::BinaryExpr*>(expr);
         
-            return std::unexpected(diagnostic_builder.build());
-        }
+        for(int i = 0; i < depth; ++i) std::cout << "  ";
 
-        return AST::AST{};
+        std::cout << token_type_string(binary_expr->op.type) << '\n';
+
+        print_expr(binary_expr->lhs, depth+1);
+        print_expr(binary_expr->rhs, depth+1);
+
+        return;
     }
 
-
-
-    std::expected<AST::AST, std::vector<Diag::Diagnostic>> Parser::parse_let_dec()
+    if(expr->is(AST::Expr::Kind::UnaryExpr))
     {
-        std::vector<Diag::Diagnostic> diagnostics;
+        auto* unary_expr = static_cast<AST::UnaryExpr*>(expr);
+        
+        for(int i = 0; i < depth; ++i) std::cout << "  ";
 
-        advance(); //* starts at let, so we try to advance
+        std::cout << token_type_string(unary_expr->op.type) << '\n';
 
-        if(!expect(Token::TokenType::Identifier))
-        {
-            Diag::DiagnosticBuilder diagnostic_builder;
+        print_expr(unary_expr->expr, depth+1);
 
-            diagnostic_builder
-                .id(Diag::DiagnosticID::Auto)
-                .severity(Diag::Severity::Error)
-                .primary_location(peek().location)
-                .add_higlight
-                (
-                    Diag::Highlight{}
-                        .location(peek().location)
-                        .message
-                        (   
-                            Diag::Message{}
-                                .template_id(Diag::DiagnosticID::Auto)
-                                .add_argument(Token::token_type_name(Token::TokenType::Identifier))
-                                .add_argument(Token::pretty_token(peek().type, source_manager.get_string(peek().location)))
-                        )
-                        .primary()
-                );
-
-            if(peek().type != Token::TokenType::Colon && peek().type != Token::TokenType::Equal)
-            {
-                diagnostic_builder
-                    .add_hint
-                    (
-                        Diag::ReplaceHint
-                        {
-                            .location=peek().location,
-                            .replace=Token::token_type_string(Token::TokenType::Identifier)
-                        }
-                    );
-
-                while //* recovery
-                (
-                    peek().type != Token::TokenType::Colon &&
-                    peek().type != Token::TokenType::Equal
-                    
-                )
-                { 
-                    if(!advance()) break;
-                }
-
-            }
-
-            else
-                diagnostic_builder
-                    .add_hint
-                    (
-                        Diag::AddHint
-                        {
-                            .message=Diag::Message{}
-                                .template_id(Diag::DiagnosticID::MaybeInsert)
-                                .add_argument(Token::token_type_name(Token::TokenType::Identifier)),
-                            .location=after(previous().location),
-                            .add=Token::token_type_string(Token::TokenType::Identifier)
-                        }
-                    );
-
-            diagnostics.push_back(diagnostic_builder.build());
-        }
-
-        if(expect(Token::TokenType::Colon))
-        {
-            auto result = parse_type();
-
-            if(!result)
-            {
-                Diag::DiagnosticBuilder diagnostic_builder(std::move(result.error()));
-
-                if(peek().type != Token::TokenType::Equal)
-                {
-                    diagnostic_builder
-                        .add_hint
-                        (
-                            Diag::ReplaceHint
-                            {
-                                .message=Diag::Message{}
-                                    .template_id(Diag::DiagnosticID::MaybeReplace)
-                                    .add_argument(Token::pretty_token(peek().type, source_manager.get_string(peek().location)))
-                                    .add_argument(std::string("<type>")),
-                                .location=peek().location,
-                                .replace="<type>"
-                            }
-                        );
-                }
-                else
-                {
-                    diagnostic_builder
-                        .add_hint
-                        (
-                            Diag::AddHint
-                            {
-                                .message=Diag::Message{}
-                                    .template_id(Diag::DiagnosticID::MaybeInsert)
-                                    .add_argument(std::string("<type>")),
-                                .location=after(previous().location),
-                                .add="<type>"
-                            }
-                        );  
-                }
-
-                diagnostics.push_back(diagnostic_builder.build());
-
-                if(!advance()) return std::unexpected(diagnostics); //* recovery
-            }
-        }
-
-        if(!expect(Token::TokenType::Equal))
-        {
-            Diag::DiagnosticBuilder diagnostic_builder;
-
-            diagnostic_builder
-                .id(Diag::DiagnosticID::Auto)
-                .severity(Diag::Severity::Error)
-                .primary_location(peek().location)
-                .add_higlight
-                (
-                    Diag::Highlight{}
-                        .location(peek().location)
-                        .message
-                        (   
-                            Diag::Message{}
-                                .template_id(Diag::DiagnosticID::Auto)
-                                .add_argument(Token::token_type_name(Token::TokenType::Equal))
-                                .add_argument(Token::pretty_token(peek().type, source_manager.get_string(peek().location)))
-                        )
-                        .primary()
-                )
-                .add_hint
-                (
-                    Diag::ReplaceHint
-                    {
-                        .message=Diag::Message{}
-                            .template_id(Diag::DiagnosticID::MaybeReplace)
-                            .add_argument(Token::pretty_token(peek().type, source_manager.get_string(peek().location)))
-                            .add_argument(Token::token_type_name(Token::TokenType::Equal)),
-                        .location=peek().location,
-                        .replace=Token::token_type_string(Token::TokenType::Equal)
-                    }
-                );
-
-            diagnostics.push_back(diagnostic_builder.build());
-        }
-
-        if(!diagnostics.empty()) return std::unexpected(diagnostics);
-
-        return AST::AST{};
+        return;
     }
 
-    std::optional<AST::AST> Parser::parse()
+    if(expr->is(AST::Expr::Kind::IntegerLiteralExpr))
     {
-        if(peek().type == Token::TokenType::Let)
-        {
-            auto result = parse_let_dec();
+        auto* integer_literal_expr = static_cast<AST::IntegerLiteralExpr*>(expr);
+        
+        for(int i = 0; i < depth; ++i) std::cout << "  ";
 
-            if(result) return *result;
+        std::cout << source_manager.get_string(integer_literal_expr->integer_literal.location);
 
-            for(auto& diag : result.error()) diag_engine.report(std::move(diag));
-            return std::nullopt;
+        std::cout << '\n';
+
+        return;
+    }
+
+    if(expr->is(AST::Expr::Kind::IdentifierExpr))
+    {
+        auto* identifier_expr = static_cast<AST::IdentifierExpr*>(expr);
+        
+        for(int i = 0; i < depth; ++i) std::cout << "  ";
+
+        std::cout << source_manager.get_string(identifier_expr->identifier.location);
+
+        std::cout << '\n';
+
+        return;
+    }
+
+}
+
+ExprResult Parser::parse_expr()
+{
+    std::cout << "parse_expr()\n";
+    return parse_additive();
+}
+
+ExprResult Parser::parse_additive()
+{
+    std::cout << "parse_additive()\n";
+    
+    auto result = parse_multiplicative();
+
+    if(!result.isUsable())
+        return ExprError();
+
+    AST::Expr* lhs = result.get();
+
+    while(Tok.is(TokenType::Plus) || Tok.is(TokenType::Subtration))
+    {
+        auto op = Tok;
+
+        advance();
+
+        auto result = parse_multiplicative();
+
+        if(!result.isUsable())
+            return ExprError();
+
+        auto* rhs = result.get();
+
+        lhs = arena.make<AST::BinaryExpr>(op, lhs, rhs);
+    }
+
+    return ExprResult(lhs);
+}
+
+
+ExprResult Parser::parse_multiplicative()
+{
+    std::cout << "parse_multiplicative()\n";
+
+    auto result = parse_unary();
+
+    if(!result.isUsable())
+        return ExprError();
+
+    AST::Expr* lhs = result.get();
+
+    while(Tok.is(TokenType::Multiplication) || Tok.is(TokenType::Division))
+    {
+        auto op = Tok;
+
+        advance();
+
+        auto result = parse_unary();
+
+        if(!result.isUsable())
+            return ExprError();
+
+        auto* rhs = result.get();
+
+        lhs = arena.make<AST::BinaryExpr>(op, lhs, rhs);
+    }
+
+    return ExprResult(lhs);
+}
+
+ExprResult Parser::parse_unary()
+{
+    std::cout << "parse_unary()\n";
+
+    if(Tok.is(TokenType::Subtration) || Tok.is(TokenType::Plus))
+    {
+        auto op = Tok;
+
+        advance();
+
+        auto result = parse_unary();
+
+        if(!result.isUsable())
+            return ExprError();
+
+        auto* expr = result.get();
+
+        return ExprResult(arena.make<AST::UnaryExpr>(op, expr));
+    }
+
+    return parse_primary();
+}
+
+ExprResult Parser::parse_primary()
+{
+    std::cout << "parse_primary()\n";
+    if(Tok.is(TokenType::IntegerLiteral))
+    {
+        auto* expr = arena.make<AST::IntegerLiteralExpr>(Tok);
+
+        advance();
+
+        return ExprResult(expr);
+    }
+
+    if(Tok.is(TokenType::Identifier))
+    {
+        auto* expr = arena.make<AST::IntegerLiteralExpr>(Tok);
+
+        advance();
+
+        return ExprResult(expr);
+    }
+
+    if(Tok.is(TokenType::LPARA))
+    {
+        advance();
+
+        auto result = parse_expr();
+
+        if(!result.isUsable())
+            return ExprError();
+
+        auto* expr = result.get();
+
+        if(!Tok.is(TokenType::RPARA))
+        { 
+            diagExpected(TokenType::RPARA);
+
+            return ExprError();
         }
 
-        return std::nullopt;
+        advance();
+
+        return ExprResult(expr);
     }
+
+    diagExpected("<expr>");
+
+    return ExprError();
+}
+
+TypeResult Parser::parse_type()
+{
+    if(!Tok.is(Token::TokenType::I32))
+    {
+        diagExpected("<type>");
+        return TypeError();
+    }    
+
+    AST::Type type(Tok.type);
+    
+    advance();
+
+    return TypeResult(type);
+}
+
+StmtResult Parser::parse_let_dec()
+{
+    using enum TokenType;
+
+    assert(Tok.is(Let) 
+            && "expected to start with `let`");
+
+    auto let_loc = Tok.location;
+
+    std::string identifier;
+    AST::Type type;
+    AST::Expr* expr;
+
+    if(!advance())
+        return StmtError();
+
+    if(!Tok.is(Identifier))
+    {
+        diagExpected(Identifier, Hint(Identifier, {Equal, Colon}));
+        return StmtError();
+    }
+
+    identifier = source_manager.get_string(Tok.location);
+
+    if(!advance())
+        return StmtError();
+
+    if(Tok.is(Colon))
+    {
+        advance();
+
+        //* parse_type() is responsible for diagnostic
+        auto result = parse_type();
+
+        if(!result.isUsable())
+            return StmtError();
+
+        type = result.get();
+    }
+
+    if(!Tok.is(Equal))
+    {
+        diagExpected(Equal);
+        return StmtError();
+    }
+
+    advance();
+
+    auto result = parse_expr();
+
+    if(!result.isUsable())
+    {
+        std::clog << "PARSING FAILED.\n";
+        return StmtError();
+    }
+
+    expr = result.get();
+
+    print_expr(expr);
+
+    return StmtResult(AST::LetDec{identifier, type, expr});
 }

@@ -24,6 +24,7 @@ namespace SourceManager
     };
 
     SourceLocation after(SourceLocation location);
+    SourceLocation before(SourceLocation location);
 
     struct FileEntry
     {

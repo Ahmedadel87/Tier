@@ -18,6 +18,8 @@ namespace Token
         Division,
         Semicolon,
         Colon,
+        LPARA,
+        RPARA,
 
         // Literals
         Identifier,
@@ -42,7 +44,6 @@ namespace Token
 
     std::string pretty_token(TokenType type, std::string_view lexeme);
 
-    
     constexpr std::string token_type_string(TokenType type)
     {
         switch (type)
@@ -56,6 +57,8 @@ namespace Token
             case TokenType::Division:           return "/";
             case TokenType::Semicolon:          return ";";
             case TokenType::Colon:              return ":";
+            case TokenType::LPARA:              return "(";
+            case TokenType::RPARA:              return ")";
 
             case TokenType::Identifier:         return "<identifier>";
             case TokenType::IntegerLiteral:     return "<integer literal>";
@@ -82,7 +85,7 @@ namespace Token
     {
         switch (type)
         {
-            case TokenType::Let:                return "<let>";
+            case TokenType::Let:                return "<kw-let>";
 
             case TokenType::Plus:               return "<plus>";
             case TokenType::Equal:              return "<equal>";
@@ -91,6 +94,8 @@ namespace Token
             case TokenType::Division:           return "<slash>";
             case TokenType::Semicolon:          return "<semicolon>";
             case TokenType::Colon:              return "<colon>";
+            case TokenType::LPARA:              return "<lpara>";
+            case TokenType::RPARA:              return "<rpara>";
 
             case TokenType::Identifier:         return "<identifier>";
             case TokenType::IntegerLiteral:     return "<integer literal>";
@@ -117,5 +122,10 @@ namespace Token
     {
         TokenType type;
         SourceManager::SourceLocation location;
+
+        bool is(TokenType p_type)
+        {
+            return type == p_type;
+        }
     };
 }

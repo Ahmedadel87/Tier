@@ -12,7 +12,6 @@ void dump_token(Token::Token& tok)
 }
 
 int main(int argc, char** argv){
-    // std::cout << "ENTER MAIN\n";
 
     if(argc < 2)
     {
@@ -35,7 +34,7 @@ int main(int argc, char** argv){
 
     auto start = std::chrono::steady_clock::now();
 
-    Parser::Parser parser(lexer, source_manager, diag_engine);
+    Parser parser(lexer, source_manager, diag_engine);
 
     parser.parse();
 

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../Support/SourceManager/SourceManager.hpp"
+#include "SourceManager.hpp"
+#include "Token.hpp"
 #include <variant>
 #include <array>
 
@@ -29,17 +30,21 @@ namespace Diag
         InvalidCharacter,
         IncompleteScientificNotation,
         MaybeInsert,
-        MaybeReplace
+        MaybeReplace,
+        WhileRecovery,
+        AssumingIsValid
     };
 
-    constexpr std::array<std::string_view, 6> diagnostic_templates =
+    constexpr std::array<std::string_view, 8> diagnostic_templates =
     {
         "expected %, found %.",
         "expected after %.",
         "unexpected character %, found.",
         "expected exponent digits after %.",
         "try inserting %.",
-        "maybe replace % with %."
+        "maybe replace % with %.",
+        "while recovering from %.",
+        "assuming % is valid."
     };
 
     using DiagnosticArgument = std::variant<
@@ -193,7 +198,7 @@ namespace Diag
 
             DiagnosticBuilder& add_higlight(const Highlight& highlight);
 
-            Diagnostic build() const;
+            Diagnostic build();
     };
     
     class DiagnosticEngine
@@ -239,4 +244,6 @@ namespace Diag
 
             void render_all() const;
     };
+
+    std::string one_of(std::vector<Token::TokenType> tokens);
 }
