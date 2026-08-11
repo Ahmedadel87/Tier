@@ -75,6 +75,10 @@ namespace Lexer
                 return true;
             case ':':
                 return true;
+            case '(':
+                return true;
+            case ')':
+                return true;
             case '!':
                 return true;
             default:
@@ -100,6 +104,10 @@ namespace Lexer
                 return Token::TokenType::Semicolon;
             case ':':
                 return Token::TokenType::Colon;
+            case '(':
+                return Token::TokenType::LPARA;
+            case ')':
+                return Token::TokenType::RPARA;
             case '!':
                 return Token::TokenType::Identifier;
             default:
@@ -158,6 +166,8 @@ namespace Lexer
                     .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id});
 
                 diagnostic_builder.add_hint(Diag::AddHint{.location = {.offset = this->offset, .length = 1, .file_id = this->file_id}, .add="0"});
+
+                advance();
 
                 return std::unexpected(diagnostic_builder.build());
             }

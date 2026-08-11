@@ -2,8 +2,10 @@
 #include <vector>
 #include <cstdint>
 #include <cassert>
+#include <utility>
+#include <new>
 
-namespace MemoryManager
+namespace Mem
 {
         template<size_t block_size>
         class Arena
@@ -70,6 +72,13 @@ namespace MemoryManager
                         current += size;
 
                         return ptr;
+                }
+
+                template<typename T, typename... Args>
+                T* make(Args&&... args)
+                {
+                        void* memory = alloc(sizeof(T), alignof(T));
+                        return new (memory) T(std::forward<Args>(args)...);
                 }
         };
 };

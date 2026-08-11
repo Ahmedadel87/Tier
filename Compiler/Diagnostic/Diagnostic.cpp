@@ -1,11 +1,32 @@
 #include "../Basic/Diagnostic.hpp"
-#include "../Support/SourceManager/SourceManager.hpp"
-#include "../Basic/Token.hpp"
+
+#include <algorithm>
 #include <iostream>
 #include <iomanip>
 
 namespace Diag
 {
+    std::string one_of(std::vector<Token::TokenType> tokens)
+    {
+        if(tokens.size() == 1)
+        {
+            return Token::token_type_name(tokens[0]);
+        }
+
+        std::string str;
+
+        str += Token::token_type_name(tokens[0]);
+
+        for(int i = 1; i < tokens.size()-1; ++i)
+        {
+            str += ", " + Token::token_type_name(tokens[i]);
+        }
+
+        str += " or " + Token::token_type_name(tokens.back());
+
+        return str;
+    } 
+
     std::string pretty_token(Token::TokenType type, std::string_view lexeme)
     {
         std::string pretty_token = token_type_name(type);
@@ -54,9 +75,13 @@ namespace Diag
     }
 
 
-    Diagnostic DiagnosticBuilder::build() const
+    Diagnostic DiagnosticBuilder::build()
     {
-        return diagnostic;
+        auto ret = diagnostic;
+
+        diagnostic = Diagnostic{};
+
+        return ret;
     }
 
     void DiagnosticEngine::report(Diagnostic&& diagnostic)
@@ -102,7 +127,8 @@ namespace Diag
             if(c == '%')
             {
                 replacement += "\x1B[33m";
-                replacement += argument_to_string(arguements[arg++]);
+                if(arguements.size() > arg) replacement += argument_to_string(arguements[arg++]);
+                else replacement += "<MISSING>";
                 replacement += "\x1B[39m"; // TODO: use the ansi code that only clears colour.
             }
             else replacement += c;
@@ -283,6 +309,12 @@ namespace Diag
 
             //* highlights:
 
+            std::sort(diagnostic.highlights.begin(), diagnostic.highlights.end(),
+            [](const auto& a, const auto& b)
+            {
+                return a.m_location.offset < b.m_location.offset;
+            });
+
             if(!diagnostic.highlights.empty())
             {
                 std::clog << '\n';
@@ -298,14 +330,14 @@ namespace Diag
                     auto [line, column] = source_manager.get_line_column(ht.m_location);
                     
                     if(ht.is_primary() && column >= cursor) 
-                        highlight(column - cursor, 0, "\x1B[31;1m~\x1B[0m", "\x1B[31;1m^\x1B[0m");
+                        highlight(column - cursor, ht.m_location.length, "\x1B[31;1m~\x1B[0m", "\x1B[31;1m^\x1B[0m");
                     else if(ht.is_secondary() && column >= cursor)
-                        highlight(column - cursor, 0, "\x1B[34;1m~\x1B[0m", "\x1B[34;1m^\x1B[0m");  
+                        highlight(column - cursor, ht.m_location.length, "\x1B[34;1m~\x1B[0m", "\x1B[34;1m^\x1B[0m");  
                     else if(column >= cursor)
-                        highlight(column - cursor, 0, "\x1B[36;1m~\x1B[0m", "\x1B[36;1m^\x1B[0m");
+                        highlight(column - cursor, ht.m_location.length, "\x1B[36;1m~\x1B[0m", "\x1B[36;1m^\x1B[0m");
 
-
-                    cursor = column + 1;
+                    cursor = column + ht.m_location.length;
+                    if(ht.m_location.length == 0) cursor++;
                 }
             }
 
@@ -363,19 +395,20 @@ namespace Diag
 
                 diagnostic.highlights.pop_back();
             }
-            std::clog << '\n';
-
-            print_gutter(line_number);
-            
+                        
             std::clog << '\n';
             //* outputs all hints;
             for(const FixItHint& hint : diagnostic.hints)
             {
+                print_gutter(line_number);
+                std::clog << '\n';
                 print_n_spaces(line_number.size());
                 std::clog << "\x1B[1;36mhelp\x1B[0m: ";
                 render_hint(hint);
                 std::clog << '\n';
             }
+
+            std::clog << '\n';
         }
     }
 }

@@ -9,6 +9,11 @@ namespace SourceManager
         return {.offset=location.offset+location.length, .length=0, .file_id=location.file_id};
     }
 
+    SourceLocation before(SourceLocation location)
+    {
+        return {.offset=location.offset-1, .length=0, .file_id=location.file_id};
+    }
+
     const bool valid_path(const fs::path& path)
     {
         if(fs::exists(path) && !path.empty())
