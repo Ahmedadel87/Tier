@@ -62,7 +62,7 @@ All type groups and types:
 
       - `f32`, `f64`: are floating point numbers (they can have decimals).
 
-      - `bool`: corresponds to i8 integers 0 and 1 masked as false (0) and true (1).
+      - `bool`: corresponds to i8 integers 0 and 1 masked as false (<=0) and true (>=1).
 
       - `void`: corresponds that there is nothing, unless it is a ptr which makes it raw memory.
 
@@ -157,7 +157,7 @@ All type groups and types:
   }
   ```
   ommiting `->` is equal to `-> void`.
-  Tier templates are made to be clear and simple, they go in hand with the type inference system using type groups and value groups, for example:
+  Tier templates are made to be clear and simple, they go in hand with the type inference system using type groups and also the trait system, for example:
   ```
   fn add<T>(x: T, y: T) -> T {
     return x + y;
@@ -171,10 +171,13 @@ All type groups and types:
   ```
   or
   ```
-  fn add<T: V::Arithmetic>(x: T, y: T) -> T {
+  fn add<T: Arithmetic>(x: T, y: T) -> T {
     return x + y;
   }
   ```
+
+  `fn add<T: Integer>` constraints the template using a type group.
+  `fn add<T: Arithmetic>` constraints the template to any type with the arithmetic trait.
 
   ## WIP
   #set promotion \
@@ -191,41 +194,181 @@ All type groups and types:
   ```
 
 # 5.0: Memory:
-  ## SECTION IN WIP.
-  ## 5.1: References and Pointers:
+  note: the compiler implements all these things with a global scope not a local one
 
-  ## SECTION IN WIP.
-  ## 5.2: ***Tier***ed Memory Safety:
-  Memory is also ***Tier***ed.
-  * `#enforce/set memory_check off`: raw memory control, compiler enforces no memory checks, best when performance is key.
-  * `#enforce/set memory_check on`: 
-    - The default setting.
-    - Tracks ownership, prevents use after being freed.
-    - Checks for dangling pointers.
-  * `#enforce/set memory_check strict`:
-    - Everything in on plus:
-    - Requires null checks before dereferencing.
-    - Single mutable reference at any given time.
-    - Full-lifetime tracking.
-    - Compile-time guaranteed safety.
-  
-  ## SECTION IN WIP.
-  ## 5.3: Heap:
-  Tier has two keywords to allocate memory on the heap,
-  there is the safer easier to use one `dynamic` and the 
-  manual one `heap`.
+  ## Objects:
+  Objects are anything with addresses (that contain some sort of value, some which may be considered as no value)
+  for example:
+  ```
+  let x = 3;
+  ```
+  3 is an object
+
+  ```
+  struct Foo
+  {
+    Bar: i32;
+    Xyz: f32;
+  }
+  ```
+  Foo is an object, and Bar is another object.
+  An object cannot be invalidated due to another member being invalidated;
+  for example:
+  ```
+  Foo foo = {Bar: 4, Xyz: 3.2};
+  let ref: &f32 = foo.Xyz;
+  foo.Bar = 4;
+  // ref still valid;
+  foo = {};
+  // ref invalidated;
+  ```
+
+  Lvalue:
+  any named thing that owns an object or refers to it.
+
+  OwnerShip:
+  let x = lvalue / x = lvalue / fn foo(x: T); foo(x)
+  the passed lvalue is invalidated, it can no longer be used, and x is the new lvalue of the object
+  this applies to owning or referencing lvalues.
+  for example
+  ```
+  let x = 6;
+  let ref = &x;
+  let new_ref = ref;
+  ```
+
+  Copying:
+  let x = copy(lvalue) / x = copy(lvalue) / fn foo(x: T); foo(copy(x))
+  x has a different address and owns a different object, but the different object the same values as the other object,
+  copy works by the Copy trait,
+  note copy is a deep copy
+
+  Immutable Referencing:
+  let x = &y; / x = &y / fn foo(x: &T); foo(&x)
+  x stores the address to the object owned/referred by y
+  so in this case x does not own any objects
+  but x cannot mutate the object referred/owned by y
+
+  Mutable Referencing:
+  let x = &mut y; / x = &mut y / fn foo(x: &mut T); foo(&mut x)
+  infinite allowed unless within a thread block (rules to be done)
+  x stores the address to the object owned/referred by y
+  so in this case x does not own any objects
+  x can mutate the object referred/owned by y
+
+  a reference is valid as long as the object it refers to still has an lvalue that OWNS it, not refers to it.
+  this means that references can NOT be null, they can be uninitialized but not null
+
+  Pointers:
+  they do not guarantee anything, they can point to objects and are not invalidated when no lvalue owns such object
+  so it can be null
+
+  object exists = o
+  number of lvalue owners = l
+  compiler allows reference = r
+
+  if object exists references can be used no matter of ownership transfer or copying
+  o iff l > 0
+  r iff l > 0
+  so o iff r
+
+  ## Second Memory Document
+  ## WIP - Combining both documents
+
+  objects:
+  objects are anything that have an address, ex:
+  4
+  "Hi"
+  heap<T>()
+
+  objects are alive as long as they are not dropped.
+  they are dropped under three conditions.
+
+  first if the variable which owned it went out of scope.
   ex:
-  ```
-  let x: dynamic i32 = 7;
-  // automatically freed
-  let y: heap *i32 = &7;
-  free(y); // must be freed manually.
-  ```
-  `dynamic` automatically makes the type after it a ptr and 
-  whatever is passed to a reference during its declaration *only*.
-  `heap` just makes sure that memory will be allocated on the heap.
-  `dynamic` tracks at compile-time when an object is out-of-scope and
-  inserts its destructor.
+  {
+    let x = 3;
+    
+    // code
+
+    // end of scope, x.drop() is called
+  }
+
+  second if the variable's destructor was called manually.
+
+  ex:
+  let x = 3;
+    
+  // code
+
+  x.drop(); // object is dropped
+
+
+  third if the variable which owned left it.
+
+  ex:
+  x = y; // first does x.drop() then x = y
+
+  move:
+  let x = y / x = y
+
+  internally nothing changes, it is just the name referred to.
+  x no longer owns its previous object so before the move x called .drop()
+  this means previous references to x are invalidated since the object was dropped
+
+  copy:
+  let x = copy(y) / x = copy(y)
+  x copies the value of x to its address
+
+  references:
+  let x: &T = &y / let x: &mut T = &mut y / x = &y / x = &mut y
+
+  references store an address, putting & before a variable gets its address.
+  they have to refer to an object which is owned.
+  immutable references '&' can not modify the value of the original variable, they are read-only.
+  mutable references '&mut' can modify the value of the original variable.
+
+  to change the value in the address the reference holds you should do:
+  ref = 3;
+  to change the address the reference refers yo you should do:
+  &ref = &var;
+
+  note: use '&ref' to get the references address, and do 'ref' to get its value;
+
+  references are valid as long as the object it refers to remains alive.
+  even if the original variable the reference referred to moved as long as the object is alive it wont matter.
+  references care about objects, not variables.
+
+  references guarantee safety, usage of references is always safe.
+
+  pointers:
+  let x: *T = &y / &x = &y 
+
+  pointers hold addresses but they don't care if the object has an owner or not.
+  ex:
+  let x: *i32 = &4;
+
+  they are used when addresses might not be known for the compiler.
+  ex:
+  let x: *i32 = heap<i32>(42); // the addresses allocated in the heap is unknown (view heap)
+  pointers are not invalidated when the object goes invalid, they must destroy themselves.
+  ex:
+  ptr.drop();
+
+  but classes could drop pointers with their own automatic drop functions like:
+  ex:
+  mem::ptr<T>;
+
+
+  note pointers have the same syntax as references;
+
+  heap:
+  let x: *T = heap<T>(val) / &x = heap<T>(val)
+
+  heap returns a pointer, the heap must be freed manually.
+  ex:
+  free(heap pointer); // note it frees the heap but doesn't drop the ptr.
+
 
 # 6.0: Headers:
   ## 6.1: Making and Using a Header:
