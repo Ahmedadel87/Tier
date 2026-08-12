@@ -57,11 +57,12 @@ class Parser
 
         Diag::DiagnosticEngine& diag_engine;
 
-        void diagExpected(Token::TokenType expected);
-        void diagExpected(std::string expected);
+        void diag(Diag::DiagnosticBuilder diagnostic);
 
-        void diagExpected(Token::TokenType expected, Diag::FixItHint hint);
-        void diagExpected(std::string expected, Diag::FixItHint hint);
+        Diag::Highlight before(Token::Token Tok, Diag::Highlight::Type p_type);
+
+        Diag::DiagnosticBuilder diagExpected(Token::TokenType expected);
+        Diag::DiagnosticBuilder diagExpected(std::string expected);
     
         Diag::FixItHint Hint(Token::TokenType expected, std::vector<Token::TokenType> types);
 

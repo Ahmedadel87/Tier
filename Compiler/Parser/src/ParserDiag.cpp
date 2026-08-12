@@ -1,6 +1,11 @@
 #include "Parser.hpp"
 
-void Parser::diagExpected(Token::TokenType expected)
+void Parser::diag(Diag::DiagnosticBuilder diagnostic)
+{
+    diag_engine.report(diagnostic.build());
+}
+
+Diag::DiagnosticBuilder Parser::diagExpected(Token::TokenType expected)
 {
     Diag::DiagnosticBuilder diag_builder;
 
@@ -22,10 +27,10 @@ void Parser::diagExpected(Token::TokenType expected)
                 )
         );
 
-    diag_engine.report(diag_builder.build());
+    return diag_builder;
 }
 
-void Parser::diagExpected(std::string expected)
+Diag::DiagnosticBuilder Parser::diagExpected(std::string expected)
 {
     Diag::DiagnosticBuilder diag_builder;
 
@@ -47,59 +52,20 @@ void Parser::diagExpected(std::string expected)
                 )
         );
 
-    diag_engine.report(diag_builder.build());
+    return diag_builder;
 }
 
-void Parser::diagExpected(Token::TokenType expected, Diag::FixItHint hint)
+Diag::Highlight Parser::before(Token::Token Tok, Diag::Highlight::Type p_type = Diag::Highlight::Type::Primary)
 {
-    Diag::DiagnosticBuilder diag_builder;
-
-    diag_builder
-        .id(Diag::DiagnosticID::Auto)
-        .severity(Diag::Severity::Error)
-        .primary_location(Tok.location)
-        .add_higlight
-        (
-            Diag::Highlight{}
-                .primary()
-                .location(Tok.location)
-                .message
-                (
-                    Diag::Message{}
-                        .template_id(Diag::DiagnosticID::Auto)
-                        .add_argument(Token::token_type_name(expected))
-                        .add_argument(Token::pretty_token(Tok.type, source_manager.get_string(Tok.location)))
-                )
-        )
-        .add_hint(hint);
-
-    diag_engine.report(diag_builder.build());
-}
-
-void Parser::diagExpected(std::string expected, Diag::FixItHint hint)
-{
-    Diag::DiagnosticBuilder diag_builder;
-
-    diag_builder
-        .id(Diag::DiagnosticID::Auto)
-        .severity(Diag::Severity::Error)
-        .primary_location(Tok.location)
-        .add_higlight
-        (
-            Diag::Highlight{}
-                .primary()
-                .location(Tok.location)
-                .message
-                (
-                    Diag::Message{}
-                        .template_id(Diag::DiagnosticID::Auto)
-                        .add_argument(expected)
-                        .add_argument(Token::pretty_token(Tok.type, source_manager.get_string(Tok.location)))
-                )
-        )
-        .add_hint(hint);
-
-    diag_engine.report(diag_builder.build());
+    return 
+        Diag::Highlight{.type=p_type}
+            .location(Tok.location)
+            .message
+            (
+                Diag::Message{}
+                    .template_id(Diag::DiagnosticID::ExpectedBefore)
+                    .add_argument(Token::pretty_token(Tok.type, source_manager.get_string(Tok.location)))
+            );
 }
 
 Diag::FixItHint Parser::Hint(Token::TokenType expected, std::vector<Token::TokenType> types)
@@ -115,7 +81,7 @@ Diag::FixItHint Parser::Hint(Token::TokenType expected, std::vector<Token::Token
                 .message=Diag::Message{}
                     .template_id(Diag::DiagnosticID::MaybeInsert)
                     .add_argument(Token::token_type_string(expected)),
-                .location=before(Tok.location),
+                .location=SourceManager::before(Tok.location),
                 .add=Token::token_type_string(expected)
             };
     }

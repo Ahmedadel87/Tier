@@ -198,12 +198,52 @@ ExprResult Parser::parse_unary()
         return ExprResult(arena.make<AST::UnaryExpr>(op, expr));
     }
 
+    if(peekTok.is(TokenType::LPARA) && !Tok.is(TokenType::Identifier))
+    {
+        advance();
+
+        diag
+        (
+            diagExpected("<operator>")
+
+            .add_higlight
+            (
+                before(Tok, Diag::Highlight::Type::Secondary)
+            )
+        );
+        return ExprError();
+    }
+
+    if(
+        !
+        (peekTok.is(TokenType::Plus) 
+        || peekTok.is(TokenType::Subtration) 
+        || peekTok.is(TokenType::Multiplication) 
+        || peekTok.is(TokenType::Division)
+        )
+    )
+    {
+        advance();
+
+        diag
+        (
+            diagExpected("<operator>")
+
+            .add_higlight
+            (
+                before(Tok, Diag::Highlight::Type::Secondary)
+            )
+        );
+        return ExprError();
+    }
+
     return parse_primary();
 }
 
 ExprResult Parser::parse_primary()
 {
     std::cout << "parse_primary()\n";
+    
     if(Tok.is(TokenType::IntegerLiteral))
     {
         auto* expr = arena.make<AST::IntegerLiteralExpr>(Tok);
@@ -215,7 +255,7 @@ ExprResult Parser::parse_primary()
 
     if(Tok.is(TokenType::Identifier))
     {
-        auto* expr = arena.make<AST::IntegerLiteralExpr>(Tok);
+        auto* expr = arena.make<AST::IdentifierExpr>(Tok);
 
         advance();
 
@@ -235,7 +275,7 @@ ExprResult Parser::parse_primary()
 
         if(!Tok.is(TokenType::RPARA))
         { 
-            diagExpected(TokenType::RPARA);
+            diag(diagExpected(TokenType::RPARA));
 
             return ExprError();
         }
@@ -283,7 +323,14 @@ StmtResult Parser::parse_let_dec()
 
     if(!Tok.is(Identifier))
     {
-        diagExpected(Identifier, Hint(Identifier, {Equal, Colon}));
+        diag
+        (
+            diagExpected(Identifier)
+            .add_hint
+            (
+                Hint(Identifier, {Equal, Colon})
+            )
+        );
         return StmtError();
     }
 
@@ -307,7 +354,7 @@ StmtResult Parser::parse_let_dec()
 
     if(!Tok.is(Equal))
     {
-        diagExpected(Equal);
+        diag(diagExpected(Equal));
         return StmtError();
     }
 
