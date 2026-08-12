@@ -32,10 +32,12 @@ namespace Diag
         MaybeInsert,
         MaybeReplace,
         WhileRecovery,
-        AssumingIsValid
+        AssumingIsValid,
+        Missing,
+        ExpectedBefore
     };
 
-    constexpr std::array<std::string_view, 8> diagnostic_templates =
+    constexpr std::array<std::string_view, 10> diagnostic_templates =
     {
         "expected %, found %.",
         "expected after %.",
@@ -44,7 +46,9 @@ namespace Diag
         "try inserting %.",
         "maybe replace % with %.",
         "while recovering from %.",
-        "assuming % is valid."
+        "assuming % is valid.",
+        "missing %.",
+        "expected before %."
     };
 
     using DiagnosticArgument = std::variant<
