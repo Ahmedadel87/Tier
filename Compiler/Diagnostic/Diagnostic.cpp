@@ -200,17 +200,17 @@ namespace Diag
 
         for(int i = 0; i < error_line.size(); ++i)
         {
-            if(i == column) std::clog << "\x1B[32m " << hint.add << "\x1B[0m";
+            if(i == column) std::clog << "\x1B[32m" << hint.add << "\x1B[0m";
             std::clog << error_line[i];
         }
 
-        if(column == error_line.size()) std::clog << "\x1B[32m " << hint.add << "\x1B[0m";
+        if(column == error_line.size()) std::clog << "\x1B[32m" << hint.add << "\x1B[0m";
 
         std::clog << '\n';
         
         print_gutter(line_number); //* note: we pass line number for formatting although it is not renderered
 
-        highlight(column+1, hint.add.size(), "\x1B[32m+\x1B[0m");
+        highlight(column, hint.add.size(), "\x1B[32m+\x1B[0m");
     }
 
     void DiagnosticRenderer::render_replace_hint(ReplaceHint hint) const

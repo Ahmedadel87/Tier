@@ -20,6 +20,8 @@ namespace Token
         Colon,
         LPARA,
         RPARA,
+        LBRAC,
+        RBRAC,
 
         // Literals
         Identifier,
@@ -59,6 +61,8 @@ namespace Token
             case TokenType::Colon:              return ":";
             case TokenType::LPARA:              return "(";
             case TokenType::RPARA:              return ")";
+            case TokenType::LBRAC:              return "{";
+            case TokenType::RBRAC:              return "}";
 
             case TokenType::Identifier:         return "<identifier>";
             case TokenType::IntegerLiteral:     return "<integer literal>";
@@ -94,8 +98,10 @@ namespace Token
             case TokenType::Division:           return "<slash>";
             case TokenType::Semicolon:          return "<semicolon>";
             case TokenType::Colon:              return "<colon>";
-            case TokenType::LPARA:              return "<lpara>";
-            case TokenType::RPARA:              return "<rpara>";
+            case TokenType::LPARA:              return "<l-para>";
+            case TokenType::RPARA:              return "<r-para>";
+            case TokenType::LBRAC:              return "<l-brac>";
+            case TokenType::RBRAC:              return "<r-brac>";
 
             case TokenType::Identifier:         return "<identifier>";
             case TokenType::IntegerLiteral:     return "<integer literal>";

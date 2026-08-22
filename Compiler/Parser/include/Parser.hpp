@@ -65,11 +65,18 @@ class Parser
         Diag::DiagnosticBuilder diagExpected(std::string expected);
     
         Diag::FixItHint Hint(Token::TokenType expected, std::vector<Token::TokenType> types);
+        Diag::FixItHint Hint(std::string expected, std::vector<Token::TokenType> types);
+    
+        // Recovery
+        // returns false on advance fatality
+        bool skip_until(std::vector<Token::TokenType> types);
 
         Token::Token Tok; //* current tok
         Token::Token peekTok; //* next tok
 
         bool advance(); //* fails on fatality
+
+        bool is_expr_terminator(Token::TokenType type);
 
         ExprResult parse_expr();
         ExprResult parse_additive();

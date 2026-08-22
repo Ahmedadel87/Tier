@@ -97,3 +97,33 @@ Diag::FixItHint Parser::Hint(Token::TokenType expected, std::vector<Token::Token
             .replace=Token::token_type_string(expected)
         };
 }
+
+Diag::FixItHint Parser::Hint(std::string expected, std::vector<Token::TokenType> types)
+{
+    bool in = false;
+    for(Token::TokenType type : types) if(Tok.is(type)) in = true;
+
+    if(in)
+    {
+        return 
+            Diag::AddHint
+            {
+                .message=Diag::Message{}
+                    .template_id(Diag::DiagnosticID::MaybeInsert)
+                    .add_argument(expected),
+                .location=Tok.location,
+                .add=expected
+            };
+    }
+
+    return 
+        Diag::ReplaceHint
+        {
+            .message=Diag::Message{}
+                .template_id(Diag::DiagnosticID::MaybeReplace)
+                .add_argument(Token::pretty_token(Tok.type, source_manager.get_string(Tok.location)))
+                .add_argument(expected),
+            .location=Tok.location,
+            .replace=expected
+        };
+}

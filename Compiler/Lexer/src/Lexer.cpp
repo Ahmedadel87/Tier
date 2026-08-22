@@ -79,6 +79,10 @@ namespace Lexer
                 return true;
             case ')':
                 return true;
+            case '{':
+                return true;
+            case '}':
+                return true;
             case '!':
                 return true;
             default:
@@ -107,6 +111,10 @@ namespace Lexer
             case '(':
                 return Token::TokenType::LPARA;
             case ')':
+                return Token::TokenType::RPARA;
+            case '{':
+                return Token::TokenType::LPARA;
+            case '}':
                 return Token::TokenType::RPARA;
             case '!':
                 return Token::TokenType::Identifier;
