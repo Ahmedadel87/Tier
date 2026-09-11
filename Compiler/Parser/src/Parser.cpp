@@ -4,6 +4,8 @@
 
 using namespace Token;
 
+#define log(x) std::clog << "\nLOG:\n" << __FILE__ << ':' << __LINE__ << '\n' << x << "\n\n";
+
 [[nodiscard]] bool Parser::advance() //* fails on fatality
 {
     auto result = lexer.next_token();
@@ -17,34 +19,99 @@ using namespace Token;
 
     diag_engine.report(std::move(result.error()));
 
+    // indicates failure and fatality
+    Tok = {.type=TokenType::EoF};
+    peekTok = {.type=TokenType::EoF};
+
     return false;
 }
 
-void Parser::init()
+StmtResult Parser::parse_statement()
 {
-    while(true)
+    using enum TokenType;
+
+    int i = 1;
+
+    if(Tok.is(EoF))
+        return StmtError();
+
+    switch(Tok.type)
     {
-        auto result = lexer.next_token();
+        case Let:
+            return parse_let_dec();
+    }
 
-        if(result)
-        { 
-            Tok = *result;
+    return StmtError();
+}
 
-            auto result2 = lexer.next_token();
+AST::Block Parser::parse_block()
+{
+    log("Parsing Block.");
 
-            if(result2) peekTok = *result2; 
+    assert(Tok.is(TokenType::LBRAC) 
+        && "expected to start with `{`");
 
-            return;
+    if(!advance() || Tok.is(TokenType::EoF))
+        return {};
+
+    AST::Block block;
+
+    while(!Tok.is(TokenType::RBRAC))
+    {
+        if(Tok.is(TokenType::EoF))
+        {
+            log("Finished Parsing Block.");
+            return block;
+        }
+
+        if(Tok.is(TokenType::LBRAC))
+            block.nodes.push_back(parse_block());
+    
+        else
+        {
+            auto result = parse_statement();
+
+            if(result.isUsable())
+                block.nodes.push_back(result.get());
         }
     }
+
+    log("Finished Parsing Block.");
+
+    (void)advance();
+
+    return block;
+}
+
+AST::Program Parser::parse()
+{
+    Tok = lexer.next_token()
+        .value_or((Token::Token{.type=TokenType::EoF}));
+
+    peekTok = lexer.next_token()
+        .value_or((Token::Token{.type=TokenType::EoF}));
+
+    // todo: parse top level statements
+
+    AST::Program program;
+
+    log("Parsing Program.");
+    
+    program = parse_block();
+
+    log("Finished Parsing.")
+
+    AST::Printer printer(std::cout, source_manager);
+
+    printer.print(program);
+    
+    return program;
 }
 
 bool Parser::skip_until(std::vector<Token::TokenType> types)
 {
     while(true)
     {
-        std::cout << "\nSkipLog: " << Token::token_type_name(Tok.type) << '\n';
-
         if(Tok.is(Token::TokenType::EoF))
             return false;
 
@@ -59,88 +126,6 @@ bool Parser::skip_until(std::vector<Token::TokenType> types)
     return true;
 }
 
-StmtResult Parser::parse()
-{
-    init(); //* starts us on a valid token.
-
-    using enum TokenType;
-
-    int i = 1;
-
-    while(true)
-    {
-        std::cout << "\nline: " << i++ << '\n';
-
-        if(Tok.is(EoF))
-            break;
-
-        switch(Tok.type)
-        {
-            case Let:
-                parse_let_dec();
-        }
-    }
-
-    return StmtError();
-}
-
-void Parser::print_expr(AST::Expr* expr, uint16_t depth = 0)
-{
-    if(expr->is(AST::Expr::Kind::BinaryExpr))
-    {
-        auto* binary_expr = static_cast<AST::BinaryExpr*>(expr);
-        
-        for(int i = 0; i < depth; ++i) std::cout << "  ";
-
-        std::cout << token_type_string(binary_expr->op.type) << '\n';
-
-        print_expr(binary_expr->lhs, depth+1);
-        print_expr(binary_expr->rhs, depth+1);
-
-        return;
-    }
-
-    if(expr->is(AST::Expr::Kind::UnaryExpr))
-    {
-        auto* unary_expr = static_cast<AST::UnaryExpr*>(expr);
-        
-        for(int i = 0; i < depth; ++i) std::cout << "  ";
-
-        std::cout << token_type_string(unary_expr->op.type) << '\n';
-
-        print_expr(unary_expr->expr, depth+1);
-
-        return;
-    }
-
-    if(expr->is(AST::Expr::Kind::IntegerLiteralExpr))
-    {
-        auto* integer_literal_expr = static_cast<AST::IntegerLiteralExpr*>(expr);
-        
-        for(int i = 0; i < depth; ++i) std::cout << "  ";
-
-        std::cout << source_manager.get_string(integer_literal_expr->integer_literal.location);
-
-        std::cout << '\n';
-
-        return;
-    }
-
-    if(expr->is(AST::Expr::Kind::IdentifierExpr))
-    {
-        auto* identifier_expr = static_cast<AST::IdentifierExpr*>(expr);
-        
-        for(int i = 0; i < depth; ++i) std::cout << "  ";
-
-        std::cout << source_manager.get_string(identifier_expr->identifier.location);
-
-        std::cout << '\n';
-
-        return;
-    }
-
-}
-
 bool Parser::is_expr_terminator(TokenType type)
 {
     return
@@ -148,11 +133,11 @@ bool Parser::is_expr_terminator(TokenType type)
         || type == TokenType::RPARA;
 }
 
-ExprResult Parser::parse_expr()
+ExprResult Parser::parse_expr(SourceManager::SourceLocation begin)
 {
     std::cout << "parse_expr()\n";
 
-    auto result = parse_additive();
+    auto result = parse_additive(begin);
 
     if(!result.isUsable())
         return ExprError();
@@ -161,11 +146,23 @@ ExprResult Parser::parse_expr()
     {
         diag
         (
-            diagExpected("<op>")
+            diagExpected(begin, "<op>")
+            .add_higlight
+            (
+                before(Tok)
+                    .help()
+                    .message
+                    (
+                        Diag::Message{}
+                            .template_id(Diag::DiagnosticID::MaybeInsert)
+                            .add_argument("<op>")
+                    )
+            )
             .add_hint
             (
                 Hint
                 (
+                    begin,
                     "<op>", 
                     {TokenType::IntegerLiteral, TokenType::Identifier}
                 )
@@ -178,11 +175,11 @@ ExprResult Parser::parse_expr()
     return result;
 }
 
-ExprResult Parser::parse_additive()
+ExprResult Parser::parse_additive(SourceManager::SourceLocation begin)
 {
     std::cout << "parse_additive()\n";
     
-    auto result = parse_multiplicative();
+    auto result = parse_multiplicative(begin);
 
     if(!result.isUsable())
         return ExprError();
@@ -196,7 +193,7 @@ ExprResult Parser::parse_additive()
         if(!advance())
             return ExprError();
 
-        auto result = parse_multiplicative();
+        auto result = parse_multiplicative(begin);
 
         if(!result.isUsable())
             return ExprError();
@@ -210,11 +207,11 @@ ExprResult Parser::parse_additive()
 }
 
 
-ExprResult Parser::parse_multiplicative()
+ExprResult Parser::parse_multiplicative(SourceManager::SourceLocation begin)
 {
     std::cout << "parse_multiplicative()\n";
 
-    auto result = parse_unary();
+    auto result = parse_unary(begin);
 
     if(!result.isUsable())
         return ExprError();
@@ -228,7 +225,7 @@ ExprResult Parser::parse_multiplicative()
         if(!advance())
             return ExprError();
 
-        auto result = parse_unary();
+        auto result = parse_unary(begin);
 
         if(!result.isUsable())
             return ExprError();
@@ -241,7 +238,7 @@ ExprResult Parser::parse_multiplicative()
     return ExprResult(lhs);
 }
 
-ExprResult Parser::parse_unary()
+ExprResult Parser::parse_unary(SourceManager::SourceLocation begin)
 {
     std::cout << "parse_unary()\n";
 
@@ -252,7 +249,7 @@ ExprResult Parser::parse_unary()
         if(!advance())
             return ExprError();
 
-        auto result = parse_unary();
+        auto result = parse_unary(begin);
 
         if(!result.isUsable())
             return ExprError();
@@ -262,10 +259,10 @@ ExprResult Parser::parse_unary()
         return ExprResult(arena.make<AST::UnaryExpr>(op, expr));
     }
 
-    return parse_primary();
+    return parse_primary(begin);
 }
 
-ExprResult Parser::parse_primary()
+ExprResult Parser::parse_primary(SourceManager::SourceLocation begin)
 {
     std::cout << "parse_primary()\n";
     
@@ -294,7 +291,7 @@ ExprResult Parser::parse_primary()
         if(!advance())
             return ExprError();
 
-        auto result = parse_expr();
+        auto result = parse_expr(begin);
 
         if(!result.isUsable())
             return ExprError();
@@ -303,7 +300,7 @@ ExprResult Parser::parse_primary()
 
         if(!Tok.is(TokenType::RPARA))
         { 
-            diag(diagExpected(TokenType::RPARA));
+            diag(diagExpected(begin, TokenType::RPARA));
 
             return ExprError();
         }
@@ -314,16 +311,16 @@ ExprResult Parser::parse_primary()
         return ExprResult(expr);
     }
 
-    diag(diagExpected("<expr>"));
+    diag(diagExpected(begin, "<expr>"));
 
     return ExprError();
 }
 
-TypeResult Parser::parse_type()
+TypeResult Parser::parse_type(SourceManager::SourceLocation begin)
 {
     if(!Tok.is(Token::TokenType::I32))
     {
-        diagExpected("<type>");
+        diag(diagExpected(begin, "<type>"));
         return TypeError();
     }    
 
@@ -355,14 +352,14 @@ StmtResult Parser::parse_let_dec()
     {
         diag
         (
-            diagExpected(Identifier)
+            diagExpected(let_loc, Identifier)
             .add_hint
             (
-                Hint(Identifier, {Equal, Colon})
+                Hint(let_loc, Identifier, {Equal, Colon})
             )
         );
 
-        skip_until({Semicolon, LBRAC});
+        skip_until({Semicolon});
         (void)advance(); // to start on the next statement
         return StmtError();
     }
@@ -378,11 +375,12 @@ StmtResult Parser::parse_let_dec()
             return StmtError();
 
         //* parse_type() is responsible for diagnostic
-        auto result = parse_type();
+        auto result = parse_type(let_loc);
 
         if(!result.isUsable())
         {
-            skip_until({Semicolon, LBRAC});
+            skip_until({Semicolon});
+            (void)advance();
             return StmtError();
         }
 
@@ -391,9 +389,9 @@ StmtResult Parser::parse_let_dec()
 
     if(!Tok.is(Equal))
     {
-        diag(diagExpected(Equal));
+        diag(diagExpected(let_loc, Equal).add_hint(Hint(let_loc, '=', {Semicolon, LPARA, IntegerLiteral, FloatLiteral, Identifier})));
 
-        skip_until({Semicolon, LBRAC});
+        skip_until({Semicolon});
         (void)advance(); // to start on the next statement
         return StmtError();
     }
@@ -401,24 +399,20 @@ StmtResult Parser::parse_let_dec()
     if(!advance())
         return StmtError();
 
-    auto result = parse_expr();
+    auto result = parse_expr(let_loc);
 
     if(!result.isUsable())
     {
-        std::clog << "PARSING FAILED.\n";
-
-        skip_until({Semicolon, LBRAC});
+        skip_until({Semicolon});
         (void)advance(); // to start on the next statement
         return StmtError();
     }
 
     expr = result.get();
 
-    print_expr(expr);
-
     if(!Tok.is(Semicolon))
     {
-        skip_until({Semicolon, LBRAC});
+        skip_until({Semicolon});
         (void)advance(); // to start on the next statement
         return StmtError();
     }

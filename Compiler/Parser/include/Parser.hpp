@@ -1,7 +1,9 @@
+#pragma once
+
 #include "Token.hpp"
 #include "Lexer.hpp"
 #include "SourceManager.hpp"
-#include "Diagnostic.hpp"
+#include "Diagnostics.hpp"
 #include "AST.hpp"
 #include "MemoryManager.hpp"
 
@@ -59,14 +61,11 @@ class Parser
 
         void diag(Diag::DiagnosticBuilder diagnostic);
 
-        Diag::Highlight before(Token::Token Tok, Diag::Highlight::Type p_type);
+        Diag::Highlight before(Token::Token Tok, Diag::Highlight::Type highlight_type = Diag::Highlight::Type::Primary);
 
-        Diag::DiagnosticBuilder diagExpected(Token::TokenType expected);
-        Diag::DiagnosticBuilder diagExpected(std::string expected);
-    
-        Diag::FixItHint Hint(Token::TokenType expected, std::vector<Token::TokenType> types);
-        Diag::FixItHint Hint(std::string expected, std::vector<Token::TokenType> types);
-    
+        Diag::DiagnosticBuilder diagExpected(SourceManager::SourceLocation begin, Diag::DiagnosticArgument expected);
+        Diag::FixItHint Hint(SourceManager::SourceLocation begin, Diag::DiagnosticArgument expected, std::vector<Token::TokenType> types);    
+        
         // Recovery
         // returns false on advance fatality
         bool skip_until(std::vector<Token::TokenType> types);
@@ -78,23 +77,24 @@ class Parser
 
         bool is_expr_terminator(Token::TokenType type);
 
-        ExprResult parse_expr();
-        ExprResult parse_additive();
-        ExprResult parse_multiplicative();
-        ExprResult parse_unary();
-        ExprResult parse_primary();
+        ExprResult parse_expr(SourceManager::SourceLocation begin);
+        ExprResult parse_additive(SourceManager::SourceLocation begin);
+        ExprResult parse_multiplicative(SourceManager::SourceLocation begin);
+        ExprResult parse_unary(SourceManager::SourceLocation begin);
+        ExprResult parse_primary(SourceManager::SourceLocation begin);
 
         void print_expr(AST::Expr* expr, uint16_t depth);
 
-        TypeResult parse_type();
+        TypeResult parse_type(SourceManager::SourceLocation begin);
         StmtResult parse_let_dec();
 
-        void init();
+        StmtResult parse_statement();
+        AST::Block parse_block();
 
     public:
         Parser(Lexer::Lexer& lexer, SourceManager::SourceManager& source_manager, Diag::DiagnosticEngine& diag_engine)
             : lexer(lexer), source_manager(source_manager), diag_engine(diag_engine)
         {}
 
-        StmtResult parse();
+        AST::Program parse();
 };

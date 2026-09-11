@@ -23,9 +23,6 @@ namespace SourceManager
         FileID file_id;
     };
 
-    SourceLocation after(SourceLocation location);
-    SourceLocation before(SourceLocation location);
-
     struct FileEntry
     {
         FileID id;
@@ -48,5 +45,7 @@ namespace SourceManager
             std::pair<uint32_t, uint32_t> get_line_column(const SourceLocation& location) const;
             std::string_view get_string(const SourceLocation& location) const;
             std::string_view get_line(FileID file_id, size_t line_number) const;
+            SourceLocation after(SourceLocation location);
+            SourceLocation before(SourceLocation location);
     };
 }

@@ -1,19 +1,10 @@
 #include "SourceManager.hpp"
 #include <algorithm>
 #include <iostream>
+#include <assert.h>
 
 namespace SourceManager
 {
-    SourceLocation after(SourceLocation location)
-    {
-        return {.offset=location.offset+location.length, .length=0, .file_id=location.file_id};
-    }
-
-    SourceLocation before(SourceLocation location)
-    {
-        return {.offset=location.offset-1, .length=0, .file_id=location.file_id};
-    }
-
     const bool valid_path(const fs::path& path)
     {
         if(fs::exists(path) && !path.empty())
@@ -59,7 +50,7 @@ namespace SourceManager
             }
         }
         
-        entry.line_offsets.push_back(entry.contents.size()+1); //* WARNING, IF YOU REMOVE THE +1 THE ENTIRE SOURCE MANAGER BREAKS
+        entry.line_offsets.push_back(entry.contents.size());
 
         id_to_file[nextID] = entry;
         return nextID++;
@@ -99,10 +90,34 @@ namespace SourceManager
     std::string_view SourceManager::get_line(FileID file_id, size_t line_number) const
     {
         const FileEntry& file = get_file(file_id);
+
+        assert(line_number + 1 < file.line_offsets.size());
         
         return std::string_view(
             file.contents.data() + file.line_offsets[line_number],
             (file.line_offsets[line_number + 1] - 1) - file.line_offsets[line_number]
         );
+    }
+
+    SourceLocation SourceManager::after(SourceLocation location)
+    {
+        return {.offset=location.offset+location.length, .length=0, .file_id=location.file_id};
+    }
+
+    SourceLocation SourceManager::before(SourceLocation location)
+    {   
+        if(get_line_column(location).second == 0)
+        {
+            auto [x, y] = get_line_column({.offset=get_file(location.file_id).line_offsets[get_line_column(location).first]-1});
+
+            std::cout << "\n\nx: " << x << "\ny: " << y << "\n\n";
+
+            return 
+            {
+                .offset=get_file(location.file_id).line_offsets[get_line_column(location).first]-1,
+                .length=0, .file_id=location.file_id};
+        }
+                
+        return {.offset=location.offset-1, .length=0, .file_id=location.file_id};
     }
 }

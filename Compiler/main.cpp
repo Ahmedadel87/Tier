@@ -38,9 +38,9 @@ int main(int argc, char** argv){
 
     parser.parse();
 
-    Diag::DiagnosticRenderer renderer(diag_engine.get_all_diagnostics(), source_manager);
+    Diag::DiagnosticRenderer renderer(source_manager);
 
-    renderer.render_all();
+    renderer.render_all(diag_engine.get_all_diagnostics());
 
     auto end = std::chrono::steady_clock::now();
 

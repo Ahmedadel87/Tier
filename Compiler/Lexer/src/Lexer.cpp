@@ -1,5 +1,6 @@
-#include "../include/Lexer.hpp"
-#include "../../Support/SourceManager/SourceManager.hpp"
+#include "Lexer.hpp"
+#include "SourceManager.hpp"
+#include "Diagnostics.hpp"
 
 #include <unordered_map>
 #include <cctype>
@@ -113,9 +114,9 @@ namespace Lexer
             case ')':
                 return Token::TokenType::RPARA;
             case '{':
-                return Token::TokenType::LPARA;
+                return Token::TokenType::LBRAC;
             case '}':
-                return Token::TokenType::RPARA;
+                return Token::TokenType::RBRAC;
             case '!':
                 return Token::TokenType::Identifier;
             default:
@@ -172,8 +173,6 @@ namespace Lexer
                     .id(Diag::DiagnosticID::IncompleteScientificNotation)
                     .severity(Diag::Severity::Error)
                     .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id});
-
-                diagnostic_builder.add_hint(Diag::AddHint{.location = {.offset = this->offset, .length = 1, .file_id = this->file_id}, .add="0"});
 
                 advance();
 
@@ -238,7 +237,26 @@ namespace Lexer
         diagnostic_builder
             .id(Diag::DiagnosticID::InvalidCharacter)
             .severity(Diag::Severity::Fatal)
-            .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id});
+            .begin_location(source_manager.before(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id}))
+            .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id})
+            .message
+            (
+                Diag::Message{}
+                    .template_id(Diag::DiagnosticID::InvalidCharacter)
+                    .add_argument(current())
+            )
+            .add_higlight
+            (
+                Diag::Highlight{}
+                    .primary()
+                    .location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id})
+                    .message
+                    (
+                        Diag::Message{}
+                            .template_id(Diag::DiagnosticID::InvalidCharacter)
+                            .add_argument(current())
+                    )
+            );
 
         return std::unexpected(diagnostic_builder.build());
     }

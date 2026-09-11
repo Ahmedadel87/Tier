@@ -44,8 +44,6 @@ namespace Token
         Null
     };
 
-    std::string pretty_token(TokenType type, std::string_view lexeme);
-
     constexpr std::string token_type_string(TokenType type)
     {
         switch (type)

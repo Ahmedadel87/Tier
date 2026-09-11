@@ -12,15 +12,8 @@ namespace Diag
         Note, //* Supports other diagnostics, adds extra useful information.
         Warning, //* Indicates a potential bug or risky code.
         Error, //* Cannot continue, code does not adhere to language rules.
-        Fatal //* Indicates a non-recoverable error, compiler aborts.
-    };
-
-    static const std::unordered_map<Severity, std::string_view> severity_name =
-    {
-        {Severity::Note, "\x1B[32mnote\x1B[0m"},
-        {Severity::Warning, "\x1B[33mwarning\x1B[0m"},
-        {Severity::Error, "\x1B[31merror\x1B[0m"},
-        {Severity::Fatal, "\x1B[31;1mfatal\x1B[0m"}
+        Fatal, //* Indicates a non-recoverable error, compiler aborts.
+        Help //* Supports other diagnostics, gives a fix.
     };
 
     enum class DiagnosticID
@@ -40,22 +33,24 @@ namespace Diag
     constexpr std::array<std::string_view, 10> diagnostic_templates =
     {
         "expected %, found %.",
-        "expected after %.",
-        "unexpected character %, found.",
+        "expected here after %.",
+        "unexpected character %.",
         "expected exponent digits after %.",
         "consider inserting %.",
         "consider replacing % with %.",
         "while recovering from %.",
         "assuming % is valid.",
         "missing %.",
-        "expected before %."
+        "expected here before %."
     };
 
     using DiagnosticArgument = std::variant<
         std::string,
         char,
         int,
-        uint32_t
+        uint32_t,
+        Token::Token,
+        Token::TokenType
     >;
 
     struct Message
@@ -79,15 +74,33 @@ namespace Diag
     struct ReplaceHint
     {
         Message message;
-        SourceManager::SourceLocation location;
-        std::string replace;
+        SourceManager::SourceLocation begin_location;
+        SourceManager::SourceLocation primary_location;
+        DiagnosticArgument replace;
+
+        ReplaceHint
+        (
+            SourceManager::SourceLocation begin_location,  
+            SourceManager::SourceLocation primary_location, 
+            Message message, DiagnosticArgument replace
+        ) : begin_location(begin_location), primary_location(primary_location), message(message), replace(replace)
+        {}
     };
 
     struct AddHint
     {
         Message message;
-        SourceManager::SourceLocation location;
-        std::string add;
+        SourceManager::SourceLocation begin_location;
+        SourceManager::SourceLocation primary_location;;
+        DiagnosticArgument add;
+
+        AddHint
+        (
+            SourceManager::SourceLocation begin_location,  
+            SourceManager::SourceLocation primary_location, 
+            Message message, DiagnosticArgument add
+        ) : begin_location(begin_location), primary_location(primary_location), message(message), add(add)
+        {}
     };
 
     using FixItHint = std::variant<ReplaceHint, AddHint>;
@@ -126,20 +139,17 @@ namespace Diag
 
         bool is_primary() const
         {
-            if(this->type == Type::Primary) return true;
-            return false;
+            return this->type == Type::Primary;
         }        
 
         bool is_secondary() const
         {
-            if(this->type == Type::Secondary) return true;
-            return false;
+            return this->type == Type::Secondary;
         }    
 
         bool is_help() const
         {
-            if(this->type == Type::Help) return true;
-            return false;
+            return this->type == Type::Help;
         }
 
         Highlight& message(const Message& message)
@@ -164,8 +174,13 @@ namespace Diag
     {
         DiagnosticStatus status;
 
-        DiagnosticID diagnostic_id;
+        DiagnosticID id;
+
         Severity severity;
+
+        Message message;
+
+        SourceManager::SourceLocation begin_location;
 
         SourceManager::SourceLocation primary_location;
 
@@ -173,81 +188,4 @@ namespace Diag
 
         std::vector<FixItHint> hints;
     };
-
-    class DiagnosticBuilder
-    {
-        private:
-            Diagnostic diagnostic;
-
-        public:
-            DiagnosticBuilder()
-            {
-                diagnostic.status = {.report=true}; // default status
-            }
-
-            DiagnosticBuilder(Diagnostic&& diag)
-            {
-                diagnostic = diag;
-            }
-
-            DiagnosticBuilder& status(DiagnosticStatus status);
-
-            DiagnosticBuilder& id(DiagnosticID id);
-
-            DiagnosticBuilder& severity(Severity severity);
-
-            DiagnosticBuilder& add_hint(FixItHint hint);
-
-            DiagnosticBuilder& primary_location(SourceManager::SourceLocation location);
-
-            DiagnosticBuilder& add_higlight(const Highlight& highlight);
-
-            Diagnostic build();
-    };
-    
-    class DiagnosticEngine
-    {
-        private:
-            std::vector<Diagnostic> diagnostics;
-
-        public:
-            DiagnosticEngine(){}
-
-            void report(Diagnostic&& diagnostic);
-
-            const std::vector<Diagnostic>& get_all_diagnostics() const
-            {
-                return diagnostics;
-            }
-    };
-
-    class DiagnosticRenderer
-    {
-        private:
-            SourceManager::SourceManager& source_manager;
-            const std::vector<Diagnostic>& diagnostics;
-
-            std::string replace(std::string_view x, const std::vector<DiagnosticArgument>& arguments) const;
-            void print_n_spaces(size_t amount) const;
-
-            void print_gutter(std::string& line_number) const;
-            void print_gutter_and_line_number(std::string& line_number) const;
-            void highlight(size_t column, size_t length, std::string highlight_with = "\x1B[31;1m~\x1B[0m", std::string point_with = "\x1B[31;1m^\x1B[0m") const;
-
-            void render_add_hint(AddHint hint) const;
-            void render_replace_hint(ReplaceHint hint) const;
-
-            void render_hint(FixItHint hint) const;
-
-            void render_header(const Diagnostic& diagnostic, std::string line_number, size_t column) const;
-
-        public:
-            DiagnosticRenderer(const std::vector<Diagnostic>& diagnostics, SourceManager::SourceManager& source_manager)
-                : diagnostics(diagnostics), source_manager(source_manager)
-            {}
-
-            void render_all() const;
-    };
-
-    std::string one_of(std::vector<Token::TokenType> tokens);
 }
