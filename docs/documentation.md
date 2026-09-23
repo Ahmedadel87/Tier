@@ -333,7 +333,7 @@ All type groups and types:
   to change the address the reference refers yo you should do:
   &ref = &var;
 
-  note: use '&ref' to get the references address, and do 'ref' to get its value;
+  note: use '&ref' to get the reference of the object, that holds the reference, and do 'ref' to get the address in ref, and do '*ref' to get the value of the object of the address in the object that holds the reference;
 
   references are valid as long as the object it refers to remains alive.
   even if the original variable the reference referred to moved as long as the object is alive it wont matter.
