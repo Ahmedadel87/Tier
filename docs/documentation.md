@@ -250,7 +250,7 @@ All type groups and types:
   but x cannot mutate the object referred/owned by y
 
   Mutable Referencing:
-  let x = &mut y; / x = &mut y / fn foo(x: &mut T); foo(&mut x)
+  let x = mut &y; / x = mut &y / fn foo(x: mut &T); foo(mut &x)
   infinite allowed unless within a thread block (rules to be done)
   x stores the address to the object owned/referred by y
   so in this case x does not own any objects
@@ -321,7 +321,7 @@ All type groups and types:
   x copies the value of x to its address
 
   references:
-  let x: &T = &y / let x: &mut T = &mut y / x = &y / x = &mut y
+  let x: &T = &y / let x: mut &T = mut &y / x = &y / x = mut &y
 
   references store an address, putting & before a variable gets its address.
   they have to refer to an object which is owned.
