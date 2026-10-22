@@ -23,5 +23,5 @@ system using `#set` and `@enforce` directives.
 - You can run it by doing `./build/tier` or by entering the build folder then doing `./tier`.
 
 ## How to test:
-- Go to `tests` folder
-- Write in terminal: `(python interpreter, ex: python3) load_tests.py (compiler path, ex: ../build/tier)`
+- Go to `tests` folder.
+- Write in terminal: `(python interpreter, ex: python3) load_tests.py (compiler path, ex: ../build/tier)`.
