@@ -1,15 +1,11 @@
-#include "Lexer/include/Lexer.hpp"
-#include "Support/SourceManager/SourceManager.hpp"
-#include "Basic/Token.hpp"
-#include "Basic/Diagnostic.hpp"
-#include "Parser/include/Parser.hpp"
+#include "Lexer.hpp"
+#include "SourceManager.hpp"
+#include "Token.hpp"
+#include "Diagnostic.hpp"
+#include "Parser.hpp"
+#include "SemanticAnalysis.hpp"
 #include <chrono>
 #include <iostream>
-
-void dump_token(Token::Token& tok)
-{
-    std::clog << static_cast<uint16_t>(tok.type) << '|' << tok.location.file_id << '|' << tok.location.offset << '|' << tok.location.length << '\n';
-}
 
 int main(int argc, char** argv){
 
@@ -36,7 +32,14 @@ int main(int argc, char** argv){
 
     Parser parser(lexer, source_manager, diag_engine);
 
-    parser.parse();
+    AST::Program *program = parser.parse();
+
+    Sema::ScopeBuilder scope_builder(program);
+
+    Sema::Block *sema_program = scope_builder.build_scoped_program();
+
+    if(sema_program->scope->get_type() == Sema::ScopeType::Program)
+        std::cout << "Sema program scope type is Program.\n";
 
     Diag::DiagnosticRenderer renderer(source_manager);
 

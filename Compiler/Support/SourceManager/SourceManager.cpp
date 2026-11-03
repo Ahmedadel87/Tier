@@ -105,19 +105,15 @@ namespace SourceManager
     }
 
     SourceLocation SourceManager::before(SourceLocation location)
-    {   
-        if(get_line_column(location).second == 0)
-        {
-            auto [x, y] = get_line_column({.offset=get_file(location.file_id).line_offsets[get_line_column(location).first]-1});
+    {
+        if(location.offset-1 >= 0)
+            return {.offset=location.offset-1, .length=0, .file_id=location.file_id};
 
-            std::cout << "\n\nx: " << x << "\ny: " << y << "\n\n";
+        const FileEntry& file = get_file(location.file_id);
 
-            return 
-            {
-                .offset=get_file(location.file_id).line_offsets[get_line_column(location).first]-1,
-                .length=0, .file_id=location.file_id};
-        }
-                
+        if(file.contents[location.offset-2] == '\r')
+            return {.offset=location.offset-2, .length=0, .file_id=location.file_id};
+
         return {.offset=location.offset-1, .length=0, .file_id=location.file_id};
     }
 }

@@ -7,6 +7,16 @@
 #include "AST.hpp"
 #include "MemoryManager.hpp"
 
+template<typename T, typename U>
+bool contain(T list, U item){
+    for(U thing : list){
+        if(thing == item)
+            return true;
+    }
+
+    return false;
+}
+
 template<typename AST>
 class ActionResult
 {
@@ -21,11 +31,11 @@ class ActionResult
             usable = p_usable;
         }
 
-        explicit ActionResult(AST p_ast)
-        {
-            usable = true;
-            ast = std::move(p_ast);
-        }
+        template<typename T>
+            requires std::constructible_from<AST, T&&>
+        explicit ActionResult(T&& p_ast)
+            : usable(true), ast(std::forward<T>(p_ast))
+        {}
 
         bool isUsable() const
         {
@@ -40,7 +50,7 @@ class ActionResult
 
 using StmtResult = ActionResult<AST::Stmt>;
 using ExprResult = ActionResult<AST::Expr*>;
-using TypeResult = ActionResult<AST::Type>;
+using TypeResult = ActionResult<AST::Type*>;
 
 inline StmtResult StmtError() { return StmtResult(false); }
 inline ExprResult ExprError() { return ExprResult(false); }
@@ -64,6 +74,7 @@ class Parser
         Diag::Highlight before(Token::Token Tok, Diag::Highlight::Type highlight_type = Diag::Highlight::Type::Primary);
 
         Diag::DiagnosticBuilder diagExpected(SourceManager::SourceLocation begin, Diag::DiagnosticArgument expected);
+        Diag::DiagnosticBuilder diagExpectedBefore(SourceManager::SourceLocation begin, Diag::DiagnosticArgument expected);
         Diag::FixItHint Hint(SourceManager::SourceLocation begin, Diag::DiagnosticArgument expected, std::vector<Token::TokenType> types);    
         
         // Recovery
@@ -89,12 +100,12 @@ class Parser
         StmtResult parse_let_dec();
 
         StmtResult parse_statement();
-        AST::Block parse_block();
+        AST::Block* parse_block();
 
     public:
         Parser(Lexer::Lexer& lexer, SourceManager::SourceManager& source_manager, Diag::DiagnosticEngine& diag_engine)
             : lexer(lexer), source_manager(source_manager), diag_engine(diag_engine)
         {}
 
-        AST::Program parse();
+        AST::Program* parse();
 };

@@ -1,6 +1,7 @@
 #include "Parser.hpp"
 #include <assert.h>
 #include <iostream>
+#include <variant>
 
 using namespace Token;
 
@@ -44,7 +45,7 @@ StmtResult Parser::parse_statement()
     return StmtError();
 }
 
-AST::Block Parser::parse_block()
+AST::Block* Parser::parse_block()
 {
     log("Parsing Block.");
 
@@ -54,7 +55,7 @@ AST::Block Parser::parse_block()
     if(!advance() || Tok.is(TokenType::EoF))
         return {};
 
-    AST::Block block;
+    auto* block = arena.make<AST::Block>();
 
     while(!Tok.is(TokenType::RBRAC))
     {
@@ -65,14 +66,17 @@ AST::Block Parser::parse_block()
         }
 
         if(Tok.is(TokenType::LBRAC))
-            block.nodes.push_back(parse_block());
+            block->nodes.emplace_back(parse_block());
     
         else
         {
             auto result = parse_statement();
 
             if(result.isUsable())
-                block.nodes.push_back(result.get());
+            {
+                log("Pushed a Statement.");
+                block->nodes.emplace_back(result.get());
+            }
         }
     }
 
@@ -83,7 +87,7 @@ AST::Block Parser::parse_block()
     return block;
 }
 
-AST::Program Parser::parse()
+AST::Program* Parser::parse()
 {
     Tok = lexer.next_token()
         .value_or((Token::Token{.type=TokenType::EoF}));
@@ -93,7 +97,7 @@ AST::Program Parser::parse()
 
     // todo: parse top level statements
 
-    AST::Program program;
+    AST::Program* program;
 
     log("Parsing Program.");
     
@@ -126,13 +130,6 @@ bool Parser::skip_until(std::vector<Token::TokenType> types)
     return true;
 }
 
-bool Parser::is_expr_terminator(TokenType type)
-{
-    return
-        type == TokenType::Semicolon
-        || type == TokenType::RPARA;
-}
-
 ExprResult Parser::parse_expr(SourceManager::SourceLocation begin)
 {
     std::cout << "parse_expr()\n";
@@ -142,11 +139,11 @@ ExprResult Parser::parse_expr(SourceManager::SourceLocation begin)
     if(!result.isUsable())
         return ExprError();
 
-    if(!is_expr_terminator(Tok.type))
+    if(!Tok.is(TokenType::Semicolon))
     {
         diag
         (
-            diagExpected(begin, "<op>")
+            diagExpected(begin, "<semi-colon>")
             .add_higlight
             (
                 before(Tok)
@@ -155,7 +152,7 @@ ExprResult Parser::parse_expr(SourceManager::SourceLocation begin)
                     (
                         Diag::Message{}
                             .template_id(Diag::DiagnosticID::MaybeInsert)
-                            .add_argument("<op>")
+                            .add_argument("<semi-colon>")
                     )
             )
             .add_hint
@@ -163,8 +160,8 @@ ExprResult Parser::parse_expr(SourceManager::SourceLocation begin)
                 Hint
                 (
                     begin,
-                    "<op>", 
-                    {TokenType::IntegerLiteral, TokenType::Identifier}
+                    ";",
+                    {TokenType::RBRAC}
                 )
             )
         );
@@ -302,6 +299,8 @@ ExprResult Parser::parse_primary(SourceManager::SourceLocation begin)
         { 
             diag(diagExpected(begin, TokenType::RPARA));
 
+            (void)advance();
+
             return ExprError();
         }
 
@@ -324,7 +323,7 @@ TypeResult Parser::parse_type(SourceManager::SourceLocation begin)
         return TypeError();
     }    
 
-    AST::Type type(Tok.type);
+    auto* type = arena.make<AST::Type>(Tok.type);
     
     if(!advance())
         return TypeError();
@@ -336,31 +335,36 @@ StmtResult Parser::parse_let_dec()
 {
     using enum TokenType;
 
+    log("Parsing Let Dec.");
+
     assert(Tok.is(Let) 
             && "expected to start with `let`");
 
     auto let_loc = Tok.location;
 
     std::string identifier;
-    AST::Type type;
-    AST::Expr* expr;
+    AST::Type* type = nullptr;
+    AST::Expr* expr = nullptr;
 
     if(!advance())
         return StmtError();
 
     if(!Tok.is(Identifier))
     {
-        diag
-        (
-            diagExpected(let_loc, Identifier)
-            .add_hint
-            (
-                Hint(let_loc, Identifier, {Equal, Colon})
-            )
-        );
+        auto valid_continuation_set = {Equal, Colon};
+
+        auto diagnostic = diagExpected(let_loc, Identifier).add_hint(
+                Hint(let_loc, Identifier, valid_continuation_set)
+            );
+
+        if(contain(valid_continuation_set, Tok.type))
+            diagnostic.add_higlight(before(Tok, Diag::Highlight::Type::Secondary));
+
+        diag(diagnostic);
 
         skip_until({Semicolon});
         (void)advance(); // to start on the next statement
+
         return StmtError();
     }
 
@@ -420,5 +424,10 @@ StmtResult Parser::parse_let_dec()
     if(!advance()) // to start on the next statement
             return StmtError();
 
-    return StmtResult(AST::LetDec{identifier, type, expr});
+    auto* ast = arena.make<AST::LetDec>(identifier, type, expr);
+
+    std::cout << "\n\nget_&: " << std::endl;
+    std::cout << std::get<AST::LetDec*>(StmtResult(ast).get())->identifier << "\n\n";
+
+    return StmtResult(ast);
 }

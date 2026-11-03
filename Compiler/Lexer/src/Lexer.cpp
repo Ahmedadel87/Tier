@@ -169,11 +169,45 @@ namespace Lexer
             {
                 Diag::DiagnosticBuilder diagnostic_builder;
 
+                auto begin_loc = SourceManager::SourceLocation{.offset = token_offset, .length = 1, .file_id = this->file_id};
+                auto tok_loc = SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id};
+
                 diagnostic_builder
                     .id(Diag::DiagnosticID::IncompleteScientificNotation)
+                    .begin_location(begin_loc)
                     .severity(Diag::Severity::Error)
-                    .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id});
-
+                    .primary_location(tok_loc)
+                    .message
+                    (
+                        Diag::Message{}
+                            .template_id(Diag::DiagnosticID::IncompleteScientificNotation)
+                            .add_argument("\'e\'")
+                    )
+                    .add_higlight
+                    (
+                        Diag::Highlight{}
+                            .primary()
+                            .location(source_manager.after(tok_loc))
+                            .message
+                            (
+                                Diag::Message{}
+                                    .template_id(Diag::DiagnosticID::IncompleteScientificNotation)
+                                    .add_argument("\'e\'")
+                            )
+                    )
+                    .add_hint
+                    (
+                        Diag::AddHint
+                        (
+                            tok_loc,
+                            source_manager.after(tok_loc),
+                            Diag::Message{}
+                                .template_id(Diag::DiagnosticID::ConsiderInsertingSuchAs)
+                                .add_argument(Token::TokenType::IntegerLiteral)
+                                .add_argument("\'0\'"),
+                            '0'
+                        )
+                    );
                 advance();
 
                 return std::unexpected(diagnostic_builder.build());
@@ -237,7 +271,7 @@ namespace Lexer
         diagnostic_builder
             .id(Diag::DiagnosticID::InvalidCharacter)
             .severity(Diag::Severity::Fatal)
-            .begin_location(source_manager.before(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id}))
+            .begin_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id})
             .primary_location(SourceManager::SourceLocation{.offset = this->offset, .length = 1, .file_id = this->file_id})
             .message
             (

@@ -38,6 +38,38 @@ Diag::DiagnosticBuilder Parser::diagExpected(SourceManager::SourceLocation begin
     return diag_builder;
 }
 
+Diag::DiagnosticBuilder Parser::diagExpectedBefore(SourceManager::SourceLocation begin, Diag::DiagnosticArgument expected)
+{
+    Diag::DiagnosticBuilder diag_builder;
+
+    diag_builder
+        .id(Diag::DiagnosticID::Auto)
+        .severity(Diag::Severity::Error)
+        .primary_location(Tok.location)
+        .begin_location(begin)
+        .message
+        (
+            Diag::Message{}
+                .template_id(Diag::DiagnosticID::Auto)
+                .add_argument(expected)
+                .add_argument(Tok)
+        )
+        .add_higlight
+        (
+            Diag::Highlight{}
+                .primary()
+                .location(source_manager.before(Tok.location))
+                .message
+                (
+                    Diag::Message{}
+                        .template_id(Diag::DiagnosticID::ExpectedBefore)
+                        .add_argument(expected)
+                )
+        );
+
+    return diag_builder;
+}
+
 Diag::Highlight Parser::before(Token::Token Tok, Diag::Highlight::Type highlight_type)
 {
     return 
@@ -62,7 +94,7 @@ Diag::FixItHint Parser::Hint(SourceManager::SourceLocation begin, Diag::Diagnost
             Diag::AddHint
             (
                 begin,
-                source_manager.before(Tok.location),
+                Tok.location,
                 Diag::Message{}
                     .template_id(Diag::DiagnosticID::MaybeInsert)
                     .add_argument(expected),

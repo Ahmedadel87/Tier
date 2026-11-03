@@ -287,7 +287,7 @@ namespace Diag
                 else
                     std::clog << "\x1B[36m";
 
-                if(column >= cursor) std::clog << '+';
+                if(column >= cursor) std::clog << "\x1B[1m+";
 
                 std::clog 
                 << "\x1B[1m-> \x1B[0m";
@@ -354,30 +354,32 @@ namespace Diag
             newline();
         }
 
-        print_gutter_and_line_number(end_line);
+        print_gutter_and_line_number_indented_by(primary_line_number, end_line);
 
         std::string_view error_line = 
         source_manager.get_line(hint.primary_location.file_id, primary_line_number);
 
         for(int i = 0; i < error_line.size(); ++i)
         {
-            if(i == primary_column) std::clog << "\x1B[32m" << add << "\x1B[0m ";
+            if(i == primary_column) std::clog << "\x1B[32;1m" << add << "\x1B[0m ";
             std::clog << error_line[i];
         }
 
-        if(primary_column == error_line.size()) std::clog << "\x1B[32m" << add << "\x1B[0m";
+        if(primary_column == error_line.size()) std::clog << "\x1B[32;1m" << add << "\x1B[0m";
 
         newline();
 
         print_gutter(end_line);
 
-        highlight(primary_column, add.size(), "\x1B[32m+\x1B[0m", "\x1B[32m-\x1B[0m");
+        highlight(primary_column, add.size(), "\x1B[32;1m+\x1B[0m", "\x1B[32;1m+\x1B[0m");
     }
 
     void DiagnosticRenderer::
         render_replace_hint(ReplaceHint hint)
     {
         auto [primary_line_number, primary_column] = source_manager.get_line_column(hint.primary_location);
+
+        std::string replace = diagnostic_argument_to_string(hint.replace);
 
         render_header
         (
@@ -398,7 +400,7 @@ namespace Diag
         for
         (
             int i = begin_line; 
-            i <= end_line; 
+            i < end_line; 
             ++i
         )
         {
@@ -408,6 +410,58 @@ namespace Diag
 
             newline();
         }
+
+        print_gutter_and_line_number_indented_by(primary_line_number, end_line);
+
+        std::string_view error_line = 
+        source_manager.get_line(hint.primary_location.file_id, primary_line_number);
+
+        for(int i = 0; i < error_line.size(); ++i)
+        {
+            if(i == primary_column){
+                std::clog << "\x1B[31;1m";
+
+                for(int j = 0; j < hint.primary_location.length; ++j) std::clog << error_line[i++];
+
+                std::clog << "\x1B[0m";
+            }
+
+            std::clog << error_line[i];
+        }
+
+        if(primary_column == error_line.size()) std::clog << "\x1B[31m" << error_line[error_line.size()-1] << "\x1B[0m";
+
+        newline();
+
+        print_gutter(end_line);
+
+        highlight(primary_column, hint.primary_location.length, "\x1B[31;1m-\x1B[0m", "\x1B[31;1m-\x1B[0m");
+
+        newline();
+
+        print_gutter(end_line);
+        
+        newline();
+
+        print_gutter_and_line_number_indented_by(primary_line_number, end_line);
+
+        for(int i = 0; i < error_line.size(); ++i)
+        {
+            if(i == primary_column){
+                std::clog << "\x1B[32;1m" << replace << "\x1B[0m ";
+                i += hint.primary_location.length;
+                continue;
+            } 
+            std::clog << error_line[i];
+        }
+
+        if(primary_column == error_line.size()) std::clog << "\x1B[32;1m" << replace << "\x1B[0m";
+
+        newline();
+
+        print_gutter(end_line);
+
+        highlight(primary_column, replace.size(), "\x1B[32;1m+\x1B[0m", "\x1B[32;1m+\x1B[0m");
     }
 
     void DiagnosticRenderer::

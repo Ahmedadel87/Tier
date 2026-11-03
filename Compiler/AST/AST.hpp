@@ -2,7 +2,9 @@
 
 #include <memory>
 #include <vector>
+#include <iostream>
 #include <ostream>
+#include <variant>
 #include "Token.hpp"
 #include "SourceManager.hpp"
 
@@ -92,10 +94,10 @@ namespace AST
     struct LetDec : public Node
     {
         std::string identifier;
-        Type type;
+        Type* type;
         Expr* expr;
 
-        LetDec(std::string identifier, Type type, Expr* expr)
+        LetDec(std::string identifier, Type* type, Expr* expr)
             : identifier(identifier), type(type), expr(expr)
         {}
 
@@ -108,7 +110,7 @@ namespace AST
 
     using Program = Block;
 
-    using Stmt = std::variant<LetDec, Block>;
+    using Stmt = std::variant<LetDec*, Block*>;
 
     struct Block : public Node
     {
@@ -182,28 +184,34 @@ namespace AST
                 }
             }
 
-            void print(const LetDec& let, int indent = 0)
+            void print(const LetDec* let, int indent = 0)
             {
+                if (!let)
+                {
+                    std::cout << "NULL LetDec!\n";
+                    return;
+                }
+
                 print_n_spaces(indent);
                 m_out << "LetDec:" << '\n';
                 print_n_spaces(indent+4);
-                m_out << "Identifier: " << let.identifier << '\n';
+                m_out << "Identifier: " << let->identifier << '\n';
                 print_n_spaces(indent+4);
-                m_out << "Type: " << Token::token_type_name(let.type.type) << '\n';
+                m_out << "Type: " << ((let->type) ? Token::token_type_name(let->type->type) : "<inferred>") << '\n';
                 print_n_spaces(indent+4);
                 m_out << "Expr: " << '\n';
-                print_expr(let.expr, indent);
+                print_expr(let->expr, indent);
                 m_out << '\n';
             }
 
-            void print_block(const Block& block, int indent = 0)
+            void print_block(const Block* block, int indent = 0)
             {
                 print_n_spaces(indent);
                 m_out << "Block {\n";
 
-                for(const Stmt& stmt : block.nodes)
+                for(const auto& stmt : block->nodes)
                 {
-                    if (auto* inner_block = std::get_if<Block>(&stmt))
+                    if (auto* inner_block = std::get_if<Block*>(&stmt))
                     {
                         print_block(*inner_block, indent+4);
                     }
@@ -211,10 +219,10 @@ namespace AST
                     else
                     {
                         std::visit(
-                            [this, indent](const auto& node)
+                            [this, indent](auto* node)
                             {
                                 print(node, indent + 4);
-                            },
+                            },       
                             stmt
                         );
                     }
@@ -229,7 +237,7 @@ namespace AST
                 : m_out(out), m_source_manager(source_manager)
             {}
 
-            void print(const Program& program, int indent = 0)
+            void print(const Program* program, int indent = 0)
             {
                 m_out << "Program: \n";
                 print_block(program, indent+4);

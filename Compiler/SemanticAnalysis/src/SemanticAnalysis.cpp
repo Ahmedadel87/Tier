@@ -1,9 +1,5 @@
-class SemanticAnalysis
+#include "SemanticAnalysis.hpp"
+
+namespace Sema
 {
-    private:
-        
-
-
-    public:
-
 }

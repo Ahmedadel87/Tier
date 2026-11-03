@@ -19,6 +19,8 @@ set(SOURCES
     Diagnostic/src/DiagnosticBuilder.cpp
     Diagnostic/src/DiagnosticEngine.cpp
     Diagnostic/src/DiagnosticRenderer.cpp
+
+    SemanticAnalysis/src/SemanticAnalysis.cpp
 )
 
 set(HEADERS
@@ -40,6 +42,9 @@ set(HEADERS
     Diagnostic/include/DiagnosticBuilder.hpp
     Diagnostic/include/DiagnosticEngine.hpp
     Diagnostic/include/DiagnosticRenderer.hpp
+
+    SemanticAnalysis/include/SemanticAnalysis.hpp
+    SemanticAnalysis/include/SymbolTable.hpp
 )
 
 add_executable(tier
@@ -69,4 +74,5 @@ target_include_directories(tier PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Support/MemoryManager
     ${CMAKE_CURRENT_SOURCE_DIR}/Parser/include
     ${CMAKE_CURRENT_SOURCE_DIR}/Diagnostic/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/SemanticAnalysis/include
 )
