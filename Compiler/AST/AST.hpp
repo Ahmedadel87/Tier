@@ -5,7 +5,9 @@
 #include <iostream>
 #include <ostream>
 #include <variant>
+#include <optional>
 #include "Token.hpp"
+
 #include "SourceManager.hpp"
 
 namespace AST
@@ -13,6 +15,10 @@ namespace AST
     struct Node
     {
         SourceManager::SourceLocation source_loc;
+
+        Node(SourceManager::SourceLocation source_loc) 
+            : source_loc(source_loc)
+        {}
     };
 
     struct Expr : public Node
@@ -27,8 +33,8 @@ namespace AST
 
         Kind kind;
 
-        explicit Expr(Kind kind)
-            : kind(kind)
+        explicit Expr(Kind kind, SourceManager::SourceLocation source_loc)
+            : kind(kind), Node(source_loc)
         {}
 
         bool is(Kind p_kind)
@@ -48,8 +54,8 @@ namespace AST
         Expr* lhs;
         Expr* rhs;
     
-        explicit BinaryExpr(Token::Token& op, Expr* lhs, Expr* rhs)
-            : Expr(Kind::BinaryExpr) , op(op), lhs(lhs), rhs(rhs)
+        explicit BinaryExpr(Token::Token& op, Expr* lhs, Expr* rhs, SourceManager::SourceLocation source_loc)
+            : Expr(Kind::BinaryExpr, source_loc) , op(op), lhs(lhs), rhs(rhs)
         {}
     };
 
@@ -58,8 +64,8 @@ namespace AST
         Token::Token op;
         Expr* expr;
     
-        explicit UnaryExpr(Token::Token& op, Expr* expr)
-            : Expr(Kind::UnaryExpr) , op(op), expr(expr)
+        explicit UnaryExpr(Token::Token& op, Expr* expr, SourceManager::SourceLocation source_loc)
+            : Expr(Kind::UnaryExpr, source_loc) , op(op), expr(expr)
         {}
     };
 
@@ -67,8 +73,8 @@ namespace AST
     {
         Token::Token integer_literal;
     
-        explicit IntegerLiteralExpr(Token::Token& integer_literal)
-            : Expr(Kind::IntegerLiteralExpr) , integer_literal(integer_literal)
+        explicit IntegerLiteralExpr(Token::Token& integer_literal, SourceManager::SourceLocation source_loc)
+            : Expr(Kind::IntegerLiteralExpr, source_loc), integer_literal(integer_literal)
         {}
     };
 
@@ -76,8 +82,8 @@ namespace AST
     {
         Token::Token identifier;
     
-        explicit IdentifierExpr(Token::Token& identifier)
-            : Expr(Kind::IdentifierExpr) , identifier(identifier)
+        explicit IdentifierExpr(Token::Token& identifier, SourceManager::SourceLocation source_loc)
+            : Expr(Kind::IdentifierExpr, source_loc) , identifier(identifier)
         {}
     };
 
@@ -85,7 +91,8 @@ namespace AST
     {
         Token::TokenType type;
 
-        Type(Token::TokenType type) : type(type)
+        Type(Token::TokenType type, SourceManager::SourceLocation source_loc)
+            : type(type), Node(source_loc)
         {}
 
         Type() = default;
@@ -93,12 +100,12 @@ namespace AST
 
     struct LetDec : public Node
     {
-        std::string identifier;
+        std::optional<Token::Token> identifier;
         Type* type;
         Expr* expr;
 
-        LetDec(std::string identifier, Type* type, Expr* expr)
-            : identifier(identifier), type(type), expr(expr)
+        LetDec(std::optional<Token::Token> identifier, Type* type, Expr* expr, SourceManager::SourceLocation source_loc)
+            : identifier(identifier), type(type), expr(expr), Node(source_loc)
         {}
 
         LetDec() = default;
@@ -115,6 +122,10 @@ namespace AST
     struct Block : public Node
     {
         std::vector<Stmt> nodes;
+
+        Block(SourceManager::SourceLocation source_loc)
+            : Node(source_loc)
+        {}
     };
 
     class Printer
@@ -195,7 +206,7 @@ namespace AST
                 print_n_spaces(indent);
                 m_out << "LetDec:" << '\n';
                 print_n_spaces(indent+4);
-                m_out << "Identifier: " << let->identifier << '\n';
+                m_out << "Identifier: " << ((let->identifier.has_value()) ? m_source_manager.get_string(let->identifier->location) : "<ghost>") << '\n';
                 print_n_spaces(indent+4);
                 m_out << "Type: " << ((let->type) ? Token::token_type_name(let->type->type) : "<inferred>") << '\n';
                 print_n_spaces(indent+4);

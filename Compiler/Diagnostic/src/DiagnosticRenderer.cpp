@@ -62,10 +62,10 @@ namespace Diag
                 std::clog << "\x1B[33;1mwarning\x1B[0m";
                 return;
             case Severity::Note:
-                std::clog << "\x1B[32;1mnote\x1B[0m";
+                std::clog << "\x1B[36;1mnote\x1B[0m";
                 return;  
             case Severity::Help:
-                std::clog << "\x1B[36;1mhelp\x1B[0m";
+                std::clog << "\x1B[32;1mhelp\x1B[0m";
                 return;        
         }
     }
@@ -99,6 +99,10 @@ namespace Diag
             else if constexpr (std::same_as<T, bool>)
             {
                 return value ? "true" : "false";
+            }
+            else if constexpr (std::same_as<T, uint32_t>)
+            {
+                return std::to_string(value);
             }
             else if constexpr (std::same_as<T, Token::TokenType>)
             {
@@ -278,24 +282,27 @@ namespace Diag
                     cursor = column + 1;
                 }
 
-                if(column >= cursor) print_n_spaces(column - cursor);
+                if(ht.m_message.has_value())
+                {
+                    if(column >= cursor) print_n_spaces(column - cursor);
 
-                if(ht.is_primary())
-                    std::clog << "\x1B[31m";
-                else if(ht.is_secondary())
-                    std::clog << "\x1B[34m";
-                else
-                    std::clog << "\x1B[36m";
+                    if(ht.is_primary())
+                        std::clog << "\x1B[31m";
+                    else if(ht.is_secondary())
+                        std::clog << "\x1B[34m";
+                    else
+                        std::clog << "\x1B[36m";
 
-                if(column >= cursor) std::clog << "\x1B[1m+";
+                    if(column >= cursor) std::clog << "\x1B[1m+";
 
-                std::clog 
-                << "\x1B[1m-> \x1B[0m";
+                    std::clog 
+                    << "\x1B[1m-> \x1B[0m";
 
-                if(ht.is_help())
-                    std::clog << "\x1B[36;1mhelp: \x1B[0m";
+                    if(ht.is_help())
+                        std::clog << "\x1B[36;1mhelp: \x1B[0m";
 
-                render_message(ht.m_message);
+                    render_message(*ht.m_message);
+                }
 
                 sorted_highlights.pop_back();
             }   
@@ -372,6 +379,12 @@ namespace Diag
         print_gutter(end_line);
 
         highlight(primary_column, add.size(), "\x1B[32;1m+\x1B[0m", "\x1B[32;1m+\x1B[0m");
+
+        newline();
+
+        print_gutter(end_line);
+
+        newline();
     }
 
     void DiagnosticRenderer::
@@ -462,6 +475,12 @@ namespace Diag
         print_gutter(end_line);
 
         highlight(primary_column, replace.size(), "\x1B[32;1m+\x1B[0m", "\x1B[32;1m+\x1B[0m");
+
+        newline();
+
+        print_gutter(end_line);
+
+        newline();
     }
 
     void DiagnosticRenderer::
@@ -471,15 +490,20 @@ namespace Diag
 
         render_header(diagnostic.severity, diagnostic.id, diagnostic.message, diagnostic.primary_location);
 
+        if(!diagnostic.highlights.empty()) 
+        {
+            newline();
+
+            print_gutter(primary_line_number);
+
+            newline();
+
+            render_lines(diagnostic);
+        }
+
+        if(!diagnostic.hints.empty()) render_hints(diagnostic.hints, primary_line_number);
+
         newline();
-
-        print_gutter(primary_line_number);
-
-        newline();
-
-        render_lines(diagnostic);
-
-        render_hints(diagnostic.hints, primary_line_number);
     }
 
     void DiagnosticRenderer::

@@ -34,12 +34,9 @@ int main(int argc, char** argv){
 
     AST::Program *program = parser.parse();
 
-    Sema::ScopeBuilder scope_builder(program);
+    Sema::SemanticAnalysis sema(source_manager, program, diag_engine);
 
-    Sema::Block *sema_program = scope_builder.build_scoped_program();
-
-    if(sema_program->scope->get_type() == Sema::ScopeType::Program)
-        std::cout << "Sema program scope type is Program.\n";
+    sema.run();
 
     Diag::DiagnosticRenderer renderer(source_manager);
 

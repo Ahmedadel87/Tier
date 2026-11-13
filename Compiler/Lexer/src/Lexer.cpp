@@ -263,6 +263,8 @@ namespace Lexer
         if(is_operator(current()))
             return lex_operator();
 
+        if(current())
+
         if(is_valid_ident_char(current()))
             return lex_identifier();
 

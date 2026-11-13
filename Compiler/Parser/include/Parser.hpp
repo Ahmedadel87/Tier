@@ -22,13 +22,15 @@ class ActionResult
 {
     private:
         bool usable;
+        bool error;
 
         AST ast;
 
     public:
-        explicit ActionResult(bool p_usable)
+        explicit ActionResult(bool isError)
         {
-            usable = p_usable;
+            error = isError;
+            usable = isError;
         }
 
         template<typename T>
@@ -40,6 +42,13 @@ class ActionResult
         bool isUsable() const
         {
             return usable;
+        }
+
+        template<typename T>
+            requires std::constructible_from<AST, T&&>
+        void attach(T&& p_ast){
+            usable = true;
+            ast = std::forward<T>(p_ast);
         }
 
         AST& get()
@@ -81,6 +90,7 @@ class Parser
         // returns false on advance fatality
         bool skip_until(std::vector<Token::TokenType> types);
 
+        Token::Token previousTok;
         Token::Token Tok; //* current tok
         Token::Token peekTok; //* next tok
 

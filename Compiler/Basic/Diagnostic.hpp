@@ -2,8 +2,10 @@
 
 #include "SourceManager.hpp"
 #include "Token.hpp"
+
 #include <variant>
 #include <array>
+#include <optional>
 
 namespace Diag
 {
@@ -30,9 +32,11 @@ namespace Diag
         ExpectedBefore,
         ConsiderInsertingSuchAs,
         ExpectedXBeforeX,
+        UnkownVariable,
+        FutureDecOnLine
     };
 
-    constexpr std::array<std::string_view, 12> diagnostic_templates =
+    constexpr std::array<std::string_view, 14> diagnostic_templates =
     {
         "expected %, found %.",
         "expected here after %.",
@@ -45,7 +49,9 @@ namespace Diag
         "missing %.",
         "expected here before %.",
         "consider inserting % such as %.",
-        "expected % here before %."
+        "expected % here before %.",
+        "uknown variable %.",
+        "future declaration of % found in the same scope on line %."
     };
 
     using DiagnosticArgument = std::variant<
@@ -95,7 +101,7 @@ namespace Diag
     {
         Message message;
         SourceManager::SourceLocation begin_location;
-        SourceManager::SourceLocation primary_location;;
+        SourceManager::SourceLocation primary_location;
         DiagnosticArgument add;
 
         AddHint
@@ -120,7 +126,7 @@ namespace Diag
 
         Type type;
 
-        Message m_message;
+        std::optional<Message>  m_message;
         SourceManager::SourceLocation m_location;
 
         Highlight& primary()

@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <iostream>
 #include <variant>
+#include <optional>
 
 using namespace Token;
 
@@ -13,6 +14,7 @@ using namespace Token;
 
     if(result)
     {
+        previousTok = Tok;
         Tok = peekTok;
         peekTok = *result;
         return true;
@@ -40,6 +42,9 @@ StmtResult Parser::parse_statement()
     {
         case Let:
             return parse_let_dec();
+        default:
+            log("ERROR: No statement! Advancing!");
+            advance();
     }
 
     return StmtError();
@@ -52,10 +57,12 @@ AST::Block* Parser::parse_block()
     assert(Tok.is(TokenType::LBRAC) 
         && "expected to start with `{`");
 
+    auto loc = Tok.location;
+
     if(!advance() || Tok.is(TokenType::EoF))
         return {};
 
-    auto* block = arena.make<AST::Block>();
+    auto* block = arena.make<AST::Block>(loc);
 
     while(!Tok.is(TokenType::RBRAC))
     {
@@ -139,36 +146,6 @@ ExprResult Parser::parse_expr(SourceManager::SourceLocation begin)
     if(!result.isUsable())
         return ExprError();
 
-    if(!Tok.is(TokenType::Semicolon))
-    {
-        diag
-        (
-            diagExpected(begin, "<semi-colon>")
-            .add_higlight
-            (
-                before(Tok)
-                    .help()
-                    .message
-                    (
-                        Diag::Message{}
-                            .template_id(Diag::DiagnosticID::MaybeInsert)
-                            .add_argument("<semi-colon>")
-                    )
-            )
-            .add_hint
-            (
-                Hint
-                (
-                    begin,
-                    ";",
-                    {TokenType::RBRAC}
-                )
-            )
-        );
-
-        return ExprError();
-    }
-
     return result;
 }
 
@@ -177,6 +154,8 @@ ExprResult Parser::parse_additive(SourceManager::SourceLocation begin)
     std::cout << "parse_additive()\n";
     
     auto result = parse_multiplicative(begin);
+
+    auto begin_loc = Tok.location;
 
     if(!result.isUsable())
         return ExprError();
@@ -197,7 +176,7 @@ ExprResult Parser::parse_additive(SourceManager::SourceLocation begin)
 
         auto* rhs = result.get();
 
-        lhs = arena.make<AST::BinaryExpr>(op, lhs, rhs);
+        lhs = arena.make<AST::BinaryExpr>(op, lhs, rhs, SourceManager::SourceLocation{begin_loc.offset, Tok.location.offset - begin_loc.offset, begin_loc.file_id});
     }
 
     return ExprResult(lhs);
@@ -212,6 +191,8 @@ ExprResult Parser::parse_multiplicative(SourceManager::SourceLocation begin)
 
     if(!result.isUsable())
         return ExprError();
+
+    auto begin_loc = Tok.location;
 
     AST::Expr* lhs = result.get();
 
@@ -229,7 +210,7 @@ ExprResult Parser::parse_multiplicative(SourceManager::SourceLocation begin)
 
         auto* rhs = result.get();
 
-        lhs = arena.make<AST::BinaryExpr>(op, lhs, rhs);
+        lhs = arena.make<AST::BinaryExpr>(op, lhs, rhs, SourceManager::SourceLocation{begin_loc.offset, Tok.location.offset - begin_loc.offset, begin_loc.file_id});
     }
 
     return ExprResult(lhs);
@@ -238,6 +219,8 @@ ExprResult Parser::parse_multiplicative(SourceManager::SourceLocation begin)
 ExprResult Parser::parse_unary(SourceManager::SourceLocation begin)
 {
     std::cout << "parse_unary()\n";
+
+    auto begin_loc = Tok.location;
 
     if(Tok.is(TokenType::Subtration) || Tok.is(TokenType::Plus))
     {
@@ -253,19 +236,19 @@ ExprResult Parser::parse_unary(SourceManager::SourceLocation begin)
 
         auto* expr = result.get();
 
-        return ExprResult(arena.make<AST::UnaryExpr>(op, expr));
+        return ExprResult(arena.make<AST::UnaryExpr>(op, expr, SourceManager::SourceLocation{begin_loc.offset, Tok.location.offset - begin_loc.offset, begin_loc.file_id}));
     }
 
-    return parse_primary(begin);
+    return parse_primary(begin_loc);
 }
 
 ExprResult Parser::parse_primary(SourceManager::SourceLocation begin)
 {
     std::cout << "parse_primary()\n";
-    
+
     if(Tok.is(TokenType::IntegerLiteral))
     {
-        auto* expr = arena.make<AST::IntegerLiteralExpr>(Tok);
+        auto* expr = arena.make<AST::IntegerLiteralExpr>(Tok, Tok.location);
 
         if(!advance())
             return ExprError();
@@ -275,7 +258,7 @@ ExprResult Parser::parse_primary(SourceManager::SourceLocation begin)
 
     if(Tok.is(TokenType::Identifier))
     {
-        auto* expr = arena.make<AST::IdentifierExpr>(Tok);
+        auto* expr = arena.make<AST::IdentifierExpr>(Tok, Tok.location);
 
         if(!advance())
             return ExprError();
@@ -315,15 +298,21 @@ ExprResult Parser::parse_primary(SourceManager::SourceLocation begin)
     return ExprError();
 }
 
-TypeResult Parser::parse_type(SourceManager::SourceLocation begin)
+TypeResult Parser::parse_type(SourceManager::SourceLocation begin_loc)
 {
-    if(!Tok.is(Token::TokenType::I32))
+    auto primitive_types = 
+        {   
+            TokenType::I8, TokenType::I16, TokenType::I32, TokenType::I64,
+            TokenType::U8, TokenType::U16, TokenType::U32, TokenType::U64
+        };
+
+    if(!contain(primitive_types, Tok.type))
     {
-        diag(diagExpected(begin, "<type>"));
+        diag(diagExpected(begin_loc, "<type>"));
         return TypeError();
     }    
 
-    auto* type = arena.make<AST::Type>(Tok.type);
+    auto* type = arena.make<AST::Type>(Tok.type, Tok.location);
     
     if(!advance())
         return TypeError();
@@ -335,14 +324,17 @@ StmtResult Parser::parse_let_dec()
 {
     using enum TokenType;
 
+    bool isError = false;
+
     log("Parsing Let Dec.");
 
     assert(Tok.is(Let) 
             && "expected to start with `let`");
 
-    auto let_loc = Tok.location;
+    auto let_begin = Tok.location;
 
-    std::string identifier;
+    std::optional<Token::Token> identifier = Token::Token{};
+
     AST::Type* type = nullptr;
     AST::Expr* expr = nullptr;
 
@@ -351,27 +343,38 @@ StmtResult Parser::parse_let_dec()
 
     if(!Tok.is(Identifier))
     {
+        isError = true;
+
         auto valid_continuation_set = {Equal, Colon};
 
-        auto diagnostic = diagExpected(let_loc, Identifier).add_hint(
-                Hint(let_loc, Identifier, valid_continuation_set)
+        auto diagnostic = diagExpected(let_begin, Identifier).add_hint(
+                Hint(let_begin, Identifier, valid_continuation_set)
             );
 
-        if(contain(valid_continuation_set, Tok.type))
-            diagnostic.add_higlight(before(Tok, Diag::Highlight::Type::Secondary));
+        if(!contain(valid_continuation_set, Tok.type))
+        {
+            diag(diagnostic);
+
+            skip_until({Semicolon, Let});
+            if(!Tok.is(Let)) (void)advance(); // to start on the next statement
+
+            return StmtError();
+        }
+            
+        diagnostic.add_higlight(before(Tok, Diag::Highlight::Type::Secondary));
 
         diag(diagnostic);
 
-        skip_until({Semicolon});
-        (void)advance(); // to start on the next statement
-
-        return StmtError();
+        identifier.reset();
     }
 
-    identifier = source_manager.get_string(Tok.location);
+    if(identifier.has_value())
+    { 
+        identifier = Tok;
 
-    if(!advance())
-        return StmtError();
+        if(!advance())
+            return StmtError();
+    }
 
     if(Tok.is(Colon))
     {
@@ -379,12 +382,12 @@ StmtResult Parser::parse_let_dec()
             return StmtError();
 
         //* parse_type() is responsible for diagnostic
-        auto result = parse_type(let_loc);
+        auto result = parse_type(let_begin);
 
         if(!result.isUsable())
         {
-            skip_until({Semicolon});
-            (void)advance();
+            skip_until({Semicolon, Let});
+            if(!Tok.is(Let)) (void)advance();
             return StmtError();
         }
 
@@ -393,22 +396,40 @@ StmtResult Parser::parse_let_dec()
 
     if(!Tok.is(Equal))
     {
-        diag(diagExpected(let_loc, Equal).add_hint(Hint(let_loc, '=', {Semicolon, LPARA, IntegerLiteral, FloatLiteral, Identifier})));
+        auto diagnostic = diagExpected(let_begin, Equal);
+        
+        auto confident_inserts_follow_set = {Identifier, LPARA, IntegerLiteral, FloatLiteral};
 
-        skip_until({Semicolon});
-        (void)advance(); // to start on the next statement
+        if(contain(confident_inserts_follow_set, Tok.type))
+            diagnostic.add_hint
+                (
+                    Diag::AddHint
+                        (
+                            let_begin, 
+                            Tok.location, 
+                            Diag::Message{}
+                                .template_id(Diag::DiagnosticID::MaybeInsert)
+                                .add_argument(Equal),
+                            '='
+                        )
+                );
+
+        diag(diagnostic);
+
+        skip_until({Semicolon, Let});
+        if(!Tok.is(Let)) (void)advance();
         return StmtError();
     }
 
     if(!advance())
         return StmtError();
 
-    auto result = parse_expr(let_loc);
+    auto result = parse_expr(let_begin);
 
     if(!result.isUsable())
     {
-        skip_until({Semicolon});
-        (void)advance(); // to start on the next statement
+        skip_until({Semicolon, Let});
+        if(!Tok.is(Let)) (void)advance(); // to start on the next statement
         return StmtError();
     }
 
@@ -416,18 +437,46 @@ StmtResult Parser::parse_let_dec()
 
     if(!Tok.is(Semicolon))
     {
-        skip_until({Semicolon});
-        (void)advance(); // to start on the next statement
+        diag(diagExpected(let_begin, Semicolon)
+            .add_hint
+            (
+                Diag::AddHint
+                (
+                    let_begin,
+                    source_manager.after(previousTok.location), 
+                    Diag::Message{}
+                        .template_id(Diag::DiagnosticID::MaybeInsert)
+                        .add_argument(Semicolon),
+                    ';'
+                )
+            )
+        );
+
+        skip_until({Semicolon, Let});
+        if(!Tok.is(Let)) (void)advance(); // to start on the next statement
         return StmtError();
     }
+
+    auto* ast = arena.make<AST::LetDec>
+    (
+        identifier, 
+        type, 
+        expr, 
+        SourceManager::SourceLocation
+            {let_begin.offset, Tok.location.offset - let_begin.offset, let_begin.file_id}
+    );
 
     if(!advance()) // to start on the next statement
             return StmtError();
 
-    auto* ast = arena.make<AST::LetDec>(identifier, type, expr);
+    if(isError)
+    {
+        auto error_result = StmtError();
 
-    std::cout << "\n\nget_&: " << std::endl;
-    std::cout << std::get<AST::LetDec*>(StmtResult(ast).get())->identifier << "\n\n";
+        error_result.attach(ast);
+
+        return error_result;
+    }
 
     return StmtResult(ast);
 }
